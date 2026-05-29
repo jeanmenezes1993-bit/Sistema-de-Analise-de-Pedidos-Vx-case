@@ -678,17 +678,22 @@ window.buildAnaliseMesOptions=buildAnaliseMesOptions;
 
 async function carregarPerfil(email){
   try {
-    // Busca na coleção 'usuarios' pelo email
-    const snap = await getDocs(query(collection(db,'usuarios')));
+    const snap = await Promise.race([
+      getDocs(query(collection(db,'usuarios'))),
+      new Promise((_,reject) => setTimeout(() => reject(new Error('timeout')), 4000))
+    ]);
     const userDoc = snap.docs.find(d => (d.data().email||'').toLowerCase() === email.toLowerCase());
     if(userDoc){
-      return userDoc.data().perfil || 'diretoria';
+      return userDoc.data().perfil || 'admin';
     }
-    // Se não encontrar, assume diretoria por segurança
+    // Coleção existe mas email não encontrado — verifica se é o primeiro usuário
+    // Se a coleção está vazia, assume admin para não bloquear o acesso
+    if(snap.docs.length === 0) return 'admin';
     return 'diretoria';
   } catch(e){
-    console.error('Erro ao carregar perfil:',e);
-    return 'diretoria';
+    // Timeout ou coleção não existe — assume admin para não bloquear
+    console.warn('Perfil não encontrado, assumindo admin:', e.message);
+    return 'admin';
   }
 }
 
