@@ -369,7 +369,7 @@
 
 <script type="module">
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import{getFirestore,collection,addDoc,getDocs,updateDoc,deleteDoc,doc,query,orderBy,onSnapshot,serverTimestamp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import{getFirestore,collection,addDoc,getDocs,updateDoc,deleteDoc,doc,onSnapshot,serverTimestamp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig={apiKey:"AIzaSyDh2PB0AHXwbwJAwYD93oImt3UxTVWr7RQ",authDomain:"sistema-analise-pedidos-vx.firebaseapp.com",projectId:"sistema-analise-pedidos-vx",storageBucket:"sistema-analise-pedidos-vx.firebasestorage.app",messagingSenderId:"295065328862",appId:"1:295065328862:web:e98c413647838bc8e1b64f"};
 const fbApp=initializeApp(firebaseConfig);
@@ -407,9 +407,33 @@ window.validarHorarios=validarHorarios;
 function atualizarSelectColab(){const s=document.getElementById('f-colab');const c=s.value;const ativos=allColabs.filter(c=>c.status==='ativo'||!c.status);s.innerHTML='<option value="">Selecione...</option>'+ativos.map(c=>`<option value="${c.nome}"${c.nome===s.value?' selected':''}>${c.nome}${c.cargo?' — '+c.cargo:''}</option>`).join('');}
 
 // LISTENERS TEMPO REAL
-onSnapshot(query(colPedidos,orderBy('criadoEm','desc')),snap=>{allPedidos=snap.docs.map(d=>({id:d.id,...d.data()}));setDot('ok');document.getElementById('rt-badge').style.display='flex';renderHistorico();renderDash();atualizarSelectColab();if(document.getElementById('screen-analise').classList.contains('active'))renderAnalise();},err=>{setDot('err');});
-onSnapshot(query(colColabs,orderBy('nome','asc')),snap=>{allColabs=snap.docs.map(d=>({id:d.id,...d.data()}));renderColaboradores();atualizarSelectColab();});
-onSnapshot(query(colLog,orderBy('timestamp','desc')),snap=>{allLogs=snap.docs.map(d=>({id:d.id,...d.data()}));renderLog();});
+// Tentar onSnapshot, com fallback para getDocs se falhar
+function iniciarListeners(){
+  try {
+    onSnapshot(colPedidos,snap=>{
+      allPedidos=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.criadoEm?.seconds||0)-(a.criadoEm?.seconds||0));
+      setDot('ok');
+      document.getElementById('rt-badge').style.display='flex';
+      renderHistorico();renderDash();atualizarSelectColab();
+      if(document.getElementById('screen-analise').classList.contains('active'))renderAnalise();
+    },async err=>{
+      console.warn('onSnapshot falhou, tentando getDocs...',err.code);
+      try {
+        const snap=await getDocs(colPedidos);
+        allPedidos=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.criadoEm?.seconds||0)-(a.criadoEm?.seconds||0));
+        setDot('ok');renderHistorico();renderDash();atualizarSelectColab();
+      } catch(e2){setDot('err');console.error('getDocs também falhou:',e2);}
+    });
+    onSnapshot(colColabs,snap=>{
+      allColabs=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+      renderColaboradores();atualizarSelectColab();
+    },err=>console.warn('colabs listener:',err));
+    onSnapshot(colLog,snap=>{
+      allLogs=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0));renderLog();
+    },err=>console.warn('log listener:',err));
+  } catch(e){setDot('err');console.error(e);}
+}
+iniciarListeners();
 
 async function registrarLog(acao,detalhe){try{await addDoc(colLog,{acao,detalhe,usuario:'Jean Menezes',timestamp:serverTimestamp()});}catch(e){console.error(e);}}
 
