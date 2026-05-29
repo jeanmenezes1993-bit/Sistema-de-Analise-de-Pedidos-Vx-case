@@ -229,6 +229,12 @@
     .view-only-banner { display:none;align-items:center;gap:8px;background:#E6F1FB;color:#0C447C;border-radius:var(--radius-md);padding:10px 14px;font-size:13px;margin-bottom:16px;border:1px solid #a0c4f0; }
     body.perfil-diretoria .view-only-banner { display:flex; }
 
+
+    /* BOTÃO GOOGLE */
+    .login-btn-google{width:100%;padding:13px 16px;margin-top:8px;background:#fff;color:#3c4043;border:1.5px solid #dadce0;border-radius:var(--radius-md);font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:background .15s,box-shadow .15s;box-shadow:0 1px 3px rgba(0,0,0,0.08);}
+    .login-btn-google:hover{background:#f8f9fa;box-shadow:0 2px 8px rgba(0,0,0,0.12);}
+    .login-btn-google:disabled{opacity:.6;cursor:not-allowed;}
+
     /* EFICIÊNCIA */
     .efic-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
     .efic-table th{text-align:left;padding:7px 10px;font-size:11px;font-weight:600;color:var(--text-secondary);background:var(--bg-secondary);border-bottom:1px solid var(--border-md);}
@@ -262,19 +268,19 @@
       </div>
     </div>
     <div class="login-heading">Bem-vindo!</div>
-    <div class="login-sub">Faça login para acessar o painel.</div>
-    <div class="login-group">
-      <label class="login-label">E-mail</label>
-      <input class="login-input" id="l-email" type="email" placeholder="seu@email.com" autocomplete="username">
-    </div>
-    <div class="login-group">
-      <label class="login-label">Senha</label>
-      <div class="login-input-wrap">
-        <input class="login-input" id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')fazerLogin()">
-        <button class="login-eye" onclick="toggleSenha()" aria-label="Mostrar senha"><i class="ti ti-eye" id="eye-icon"></i></button>
-      </div>
-    </div>
-    <button class="login-btn" id="login-btn" onclick="fazerLogin()"><i class="ti ti-lock-open"></i> Entrar</button>
+    <div class="login-sub">Use sua conta Google para acessar o painel.</div>
+
+    <button class="login-btn-google" id="login-btn" onclick="fazerLoginGoogle()">
+      <svg width="20" height="20" viewBox="0 0 48 48" style="flex-shrink:0;">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        <path fill="none" d="M0 0h48v48H0z"/>
+      </svg>
+      Entrar com Google
+    </button>
+
     <div class="login-error" id="login-error"><i class="ti ti-alert-circle"></i><span id="login-error-txt"></span></div>
     <div class="login-footer">Sistema de uso interno — acesso restrito</div>
   </div>
@@ -611,7 +617,7 @@
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -737,24 +743,33 @@ onAuthStateChanged(auth, user=>{
   }
 });
 
-async function fazerLogin(){
-  const email=document.getElementById('l-email').value.trim();
-  const pass=document.getElementById('l-pass').value;
+const googleProvider = new GoogleAuthProvider();
+
+async function fazerLoginGoogle(){
   const btn=document.getElementById('login-btn');
   const errEl=document.getElementById('login-error');
   errEl.style.display='none';
-  if(!email||!pass){document.getElementById('login-error-txt').textContent='Preencha e-mail e senha.';errEl.style.display='flex';return;}
-  btn.disabled=true;btn.innerHTML='<div class="spinner" style="border-color:#9FE1CB;border-top-color:#fff;width:16px;height:16px;border-width:2px;"></div> Entrando...';
-  try{await signInWithEmailAndPassword(auth,email,pass);}
-  catch(e){
-    const msgs={'auth/user-not-found':'Usuário não encontrado.','auth/wrong-password':'Senha incorreta.','auth/invalid-email':'E-mail inválido.','auth/invalid-credential':'E-mail ou senha incorretos.','auth/too-many-requests':'Muitas tentativas. Aguarde.'};
-    document.getElementById('login-error-txt').textContent=msgs[e.code]||'Erro ao fazer login.';
+  btn.disabled=true;
+  btn.innerHTML='<div class="spinner" style="width:18px;height:18px;border-width:2px;border-color:#dadce0;border-top-color:#4285F4;"></div> Entrando...';
+  try{
+    await signInWithPopup(auth, googleProvider);
+  } catch(e){
+    const msgs={
+      'auth/popup-closed-by-user':'Login cancelado. Tente novamente.',
+      'auth/cancelled-popup-request':'Login cancelado. Tente novamente.',
+      'auth/popup-blocked':'Pop-up bloqueado. Permita pop-ups para este site.',
+      'auth/unauthorized-domain':'Domínio não autorizado no Firebase.',
+    };
+    document.getElementById('login-error-txt').textContent=msgs[e.code]||'Erro ao fazer login: '+e.message;
     errEl.style.display='flex';
-  }finally{btn.disabled=false;btn.innerHTML='<i class="ti ti-lock-open"></i> Entrar';}
+  } finally{
+    btn.disabled=false;
+    btn.innerHTML=`<svg width="20" height="20" viewBox="0 0 48 48" style="flex-shrink:0;"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Entrar com Google`;
+  }
 }
 async function fazerLogout(){if(confirm('Deseja sair?'))await signOut(auth);}
-function toggleSenha(){const i=document.getElementById('l-pass'),ic=document.getElementById('eye-icon');i.type=i.type==='password'?'text':'password';ic.className=i.type==='password'?'ti ti-eye':'ti ti-eye-off';}
-window.fazerLogin=fazerLogin;window.fazerLogout=fazerLogout;window.toggleSenha=toggleSenha;
+window.fazerLoginGoogle=fazerLoginGoogle;
+window.fazerLogout=fazerLogout;
 
 /* ── TEMPO REAL com onSnapshot ── */
 function iniciarListeners(){
