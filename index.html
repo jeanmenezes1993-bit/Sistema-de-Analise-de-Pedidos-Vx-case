@@ -585,6 +585,11 @@ function fecharPerfil(){document.getElementById('modal-perfil').classList.remove
 function fecharPerfilSeSobreposto(e){if(e.target===document.getElementById('modal-perfil'))fecharPerfil();}
 window.abrirPerfil=abrirPerfil;window.fecharPerfil=fecharPerfil;window.fecharPerfilSeSobreposto=fecharPerfilSeSobreposto;
 
+window.salvarPedido=salvarPedido;
+window.renderHistorico=renderHistorico;
+window.renderLog=renderLog;
+window.exportarExcel=exportarExcel;
+window.exportarPDF=exportarPDF;
 window.showTab=function(tab){['dash','pedidos','colaboradores','analise','log'].forEach(t=>{document.getElementById('screen-'+t).classList.toggle('active',t===tab);document.getElementById('tab-'+t).classList.toggle('active',t===tab);});if(tab==='dash')renderDash();if(tab==='analise')renderAnalise();};
 window.renderHistorico=renderHistorico;
 window.salvarColaborador=salvarColaborador;
