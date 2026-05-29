@@ -3,304 +3,246 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SAP — Sistema de Análise de Performance</title>
+  <title>Sistema de Análise de Armazém</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <style>
     :root {
-      --bg-page:       #F3F4F6;
-      --bg-primary:    #FFFFFF;
-      --bg-secondary:  #F9FAFB;
-      --text-primary:  #111827;
-      --text-secondary:#6B7280;
-      --text-tertiary: #9CA3AF;
-      --border:        rgba(0,0,0,0.08);
-      --border-md:     rgba(0,0,0,0.14);
-      --green:         #1D9E75;
-      --green-dark:    #0F6E56;
-      --green-light:   #E1F5EE;
-      --green-text:    #0F6E56;
-      --red:           #E24B4A;
-      --red-light:     #FCEBEB;
-      --red-text:      #A32D2D;
-      --sidebar-bg:    #1A2332;
-      --sidebar-hover: rgba(255,255,255,0.07);
-      --sidebar-active:rgba(29,158,117,0.18);
-      --sidebar-text:  rgba(255,255,255,0.55);
-      --sidebar-title: rgba(255,255,255,0.85);
-      --radius-sm: 6px;
-      --radius-md: 8px;
-      --radius-lg: 12px;
+      --bg-page:#F3F4F6; --bg-primary:#FFFFFF; --bg-secondary:#F9FAFB;
+      --text-primary:#111827; --text-secondary:#6B7280; --text-tertiary:#9CA3AF;
+      --border:rgba(0,0,0,0.08); --border-md:rgba(0,0,0,0.14);
+      --green:#1D9E75; --green-dark:#0F6E56; --green-light:#E1F5EE; --green-text:#0F6E56;
+      --red:#E24B4A; --red-light:#FCEBEB; --red-text:#A32D2D;
+      --sidebar-bg:#1A2332; --sidebar-hover:rgba(255,255,255,0.07);
+      --sidebar-active:rgba(29,158,117,0.18); --sidebar-text:rgba(255,255,255,0.55);
+      --radius-sm:6px; --radius-md:8px; --radius-lg:12px;
     }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg-page);color:var(--text-primary);min-height:100vh;}
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg-page);
-      color: var(--text-primary);
-      min-height: 100vh;
+    /* ── LOGIN ── */
+    #login-screen {
+      min-height:100vh; display:flex; align-items:center; justify-content:center;
+      background: linear-gradient(135deg, #0F1E2D 0%, #1A2332 50%, #0D3D2E 100%);
     }
+    .login-box {
+      background:#fff; border-radius:20px; padding:40px 44px;
+      width:100%; max-width:400px;
+      box-shadow:0 24px 60px rgba(0,0,0,0.25);
+    }
+    .login-logo {
+      display:flex; align-items:center; gap:12px; margin-bottom:28px;
+    }
+    .login-logo-icon {
+      width:44px; height:44px; background:var(--green);
+      border-radius:12px; display:flex; align-items:center; justify-content:center;
+      font-size:16px; font-weight:800; color:#fff; letter-spacing:-1px;
+    }
+    .login-logo-title { font-size:18px; font-weight:700; color:var(--text-primary); }
+    .login-logo-sub { font-size:12px; color:var(--text-secondary); }
+    .login-heading { font-size:22px; font-weight:700; color:var(--text-primary); margin-bottom:6px; }
+    .login-sub { font-size:13px; color:var(--text-secondary); margin-bottom:28px; }
+    .login-group { margin-bottom:16px; }
+    .login-label { font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:6px; display:block; }
+    .login-input {
+      width:100%; padding:11px 14px; font-size:14px;
+      border:1.5px solid var(--border-md); border-radius:var(--radius-md);
+      background:#fff; color:var(--text-primary);
+      transition:border-color .15s, box-shadow .15s;
+    }
+    .login-input:focus { outline:none; border-color:var(--green); box-shadow:0 0 0 3px rgba(29,158,117,.12); }
+    .login-input-wrap { position:relative; }
+    .login-eye {
+      position:absolute; right:12px; top:50%; transform:translateY(-50%);
+      background:none; border:none; cursor:pointer; color:var(--text-tertiary);
+      font-size:16px; padding:2px;
+    }
+    .login-btn {
+      width:100%; padding:12px; margin-top:8px;
+      background:var(--green); color:#fff;
+      border:none; border-radius:var(--radius-md);
+      font-size:15px; font-weight:700; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      transition:background .15s; letter-spacing:.01em;
+    }
+    .login-btn:hover { background:var(--green-dark); }
+    .login-btn:disabled { background:#9FE1CB; cursor:not-allowed; }
+    .login-error {
+      background:var(--red-light); color:var(--red-text);
+      border:1px solid #F09595; border-radius:var(--radius-md);
+      padding:10px 14px; font-size:13px; margin-top:14px;
+      display:none; align-items:center; gap:8px;
+    }
+    .login-footer { margin-top:24px; text-align:center; font-size:12px; color:var(--text-tertiary); }
 
-    .app { display: flex; min-height: 100vh; }
-
-    /* ── SIDEBAR ── */
+    /* ── APP ── */
+    .app { display:flex; min-height:100vh; }
     .sidebar {
-      width: 56px;
-      flex-shrink: 0;
-      background: var(--sidebar-bg);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 14px 0;
-      position: fixed;
-      top: 0; left: 0; bottom: 0;
-      z-index: 100;
+      width:56px; flex-shrink:0; background:var(--sidebar-bg);
+      display:flex; flex-direction:column; align-items:center;
+      padding:14px 0; position:fixed; top:0; left:0; bottom:0; z-index:100;
     }
-
     .sidebar-logo {
-      width: 32px; height: 32px;
-      background: var(--green);
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 12px; font-weight: 700; color: #fff;
-      margin-bottom: 20px;
-      letter-spacing: -.5px;
+      width:32px; height:32px; background:var(--green); border-radius:8px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:11px; font-weight:800; color:#fff; margin-bottom:20px; letter-spacing:-.5px;
     }
-
-    .nav-section {
-      width: 100%;
-      display: flex; flex-direction: column; align-items: center;
-      gap: 4px;
-      flex: 1;
-    }
-
-    .nav-sep {
-      width: 28px; height: 1px;
-      background: rgba(255,255,255,0.08);
-      margin: 8px 0;
-    }
-
+    .nav-section { width:100%; display:flex; flex-direction:column; align-items:center; gap:4px; flex:1; }
+    .nav-sep { width:28px; height:1px; background:rgba(255,255,255,0.08); margin:8px 0; }
     .nav-btn {
-      width: 40px; height: 40px;
-      border-radius: var(--radius-md);
-      border: none;
-      background: none;
-      color: var(--sidebar-text);
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px;
-      transition: background .15s, color .15s;
-      position: relative;
+      width:40px; height:40px; border-radius:var(--radius-md); border:none;
+      background:none; color:var(--sidebar-text); cursor:pointer;
+      display:flex; align-items:center; justify-content:center; font-size:18px;
+      transition:background .15s, color .15s; position:relative;
     }
-    .nav-btn:hover { background: var(--sidebar-hover); color: rgba(255,255,255,.85); }
-    .nav-btn.active { background: var(--sidebar-active); color: #5DCAA5; }
+    .nav-btn:hover { background:var(--sidebar-hover); color:rgba(255,255,255,.85); }
+    .nav-btn.active { background:var(--sidebar-active); color:#5DCAA5; }
     .nav-btn[data-tip]:hover::after {
-      content: attr(data-tip);
-      position: absolute;
-      left: calc(100% + 10px);
-      top: 50%; transform: translateY(-50%);
-      background: #111;
-      color: #fff;
-      font-size: 11px;
-      padding: 4px 10px;
-      border-radius: 5px;
-      white-space: nowrap;
-      pointer-events: none;
-      z-index: 200;
+      content:attr(data-tip); position:absolute; left:calc(100% + 10px); top:50%;
+      transform:translateY(-50%); background:#111; color:#fff; font-size:11px;
+      padding:4px 10px; border-radius:5px; white-space:nowrap; pointer-events:none; z-index:200;
     }
+    .nav-user {
+      width:36px; height:36px; border-radius:50%; background:rgba(29,158,117,.25);
+      border:1.5px solid rgba(29,158,117,.5); color:#5DCAA5;
+      display:flex; align-items:center; justify-content:center;
+      font-size:11px; font-weight:700; cursor:pointer; position:relative;
+      margin-top:auto; margin-bottom:4px; transition:background .15s;
+    }
+    .nav-user:hover { background:rgba(29,158,117,.4); }
+    .nav-user[data-tip]:hover::after {
+      content:attr(data-tip); position:absolute; left:calc(100% + 10px); top:50%;
+      transform:translateY(-50%); background:#111; color:#fff; font-size:11px;
+      padding:4px 10px; border-radius:5px; white-space:nowrap; pointer-events:none; z-index:200;
+    }
+    .db-dot-wrap { margin-bottom:8px; }
+    .db-dot { width:7px; height:7px; border-radius:50%; background:#888; transition:background .3s; }
+    .db-dot.ok { background:#1D9E75; } .db-dot.err { background:#E24B4A; }
 
-    .db-pill {
-      width: 40px; height: 24px;
-      border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-      margin-top: auto; margin-bottom: 4px;
-    }
-    .db-dot {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: #888;
-      transition: background .3s;
-    }
-    .db-dot.ok { background: #1D9E75; }
-    .db-dot.err { background: #E24B4A; }
-
-    /* ── MAIN ── */
-    .main {
-      margin-left: 56px;
-      flex: 1;
-      min-width: 0;
-      padding: 24px;
-    }
-
-    .screen { display: none; }
-    .screen.active { display: block; }
-
-    /* ── TOPBAR ── */
-    .top-row {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 20px;
-    }
-    .page-title { font-size: 18px; font-weight: 600; color: var(--text-primary); }
-    .page-sub { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
-
-    /* ── KPI CARDS ── */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-    .kpi-card {
-      background: var(--bg-primary);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 16px 18px;
-    }
-    .kpi-icon { font-size: 20px; color: var(--green); margin-bottom: 8px; }
-    .kpi-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 3px; }
-    .kpi-value { font-size: 22px; font-weight: 600; color: var(--text-primary); }
-    .kpi-sub { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
-
-    /* ── LAYOUT CARDS ── */
-    .mid-grid {
-      display: grid;
-      grid-template-columns: 200px 1fr;
-      gap: 14px;
-      margin-bottom: 16px;
-    }
-    .card {
-      background: var(--bg-primary);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 16px 18px;
-    }
-    .card-label {
-      font-size: 11px; font-weight: 600;
-      color: var(--text-secondary);
-      text-transform: uppercase; letter-spacing: .06em;
-      margin-bottom: 12px;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .bottom-card {
-      background: var(--bg-primary);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 16px 18px;
-      margin-bottom: 16px;
-    }
-
-    /* ── RANKING ── */
-    .rank-item {
-      display: flex; align-items: center; gap: 8px;
-      padding: 6px 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .rank-item:last-child { border-bottom: none; }
-    .rank-av {
-      width: 26px; height: 26px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 10px; font-weight: 600; flex-shrink: 0;
-    }
-    .rank-name { font-size: 13px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .rank-val { font-size: 12px; font-weight: 600; color: var(--green); }
-
-    /* ── FORMULÁRIO ── */
-    .form-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px; }
-    .form-group { margin-bottom: 13px; }
-    .form-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 5px; display: block; font-weight: 500; }
-    .form-input {
-      width: 100%; font-size: 14px; padding: 8px 11px;
-      border-radius: var(--radius-md);
-      border: 1px solid var(--border-md);
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      transition: border-color .15s, box-shadow .15s;
-    }
-    .form-input:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(29,158,117,.12); }
-    .time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .btn-save {
-      width: 100%; padding: 10px;
-      background: var(--green); color: #fff;
-      border: none; border-radius: var(--radius-md);
-      font-size: 14px; font-weight: 600; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 6px;
-      transition: background .15s;
-    }
-    .btn-save:hover { background: var(--green-dark); }
-    .btn-save:disabled { background: #9FE1CB; cursor: not-allowed; }
-
-    /* ── ALERTAS ── */
-    .msg { border-radius: var(--radius-md); padding: 10px 14px; font-size: 13px; margin-bottom: 13px; display: none; align-items: center; gap: 8px; }
-    .msg-ok { background: var(--green-light); color: var(--green-text); border: 1px solid #9FE1CB; }
-    .msg-err { background: var(--red-light); color: var(--red-text); border: 1px solid #F09595; }
-    .form-error { color: var(--red-text); font-size: 12px; margin-top: 7px; display: none; }
-
-    /* ── TABELA HISTÓRICO ── */
-    .hist-filters { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; }
-    .hist-filters select,
-    .hist-filters input { font-size: 13px; padding: 6px 10px; border-radius: var(--radius-md); border: 1px solid var(--border-md); background: var(--bg-primary); color: var(--text-primary); }
-    .hist-filters input { width: 180px; }
-    .hist-label { font-size: 14px; font-weight: 600; }
-    .hist-count { font-size: 12px; font-weight: 400; color: var(--text-secondary); margin-left: 6px; }
-    .table-wrap { overflow-x: auto; }
-    .hist-table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
-    .hist-table th {
-      text-align: left; padding: 9px 11px;
-      font-size: 11px; font-weight: 600; color: var(--text-secondary);
-      background: var(--bg-secondary);
-      border-bottom: 1px solid var(--border-md);
-    }
-    .hist-table td { padding: 9px 11px; border-bottom: 1px solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .hist-table tr:hover td { background: var(--bg-secondary); }
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
-    .badge-g { background: var(--green-light); color: var(--green-text); }
-    .btn-del {
-      background: none; border: 1px solid var(--border-md);
-      color: var(--text-secondary); border-radius: var(--radius-sm);
-      padding: 4px 9px; font-size: 12px; cursor: pointer;
-      transition: background .1s, color .1s;
-    }
-    .btn-del:hover { background: var(--red-light); color: var(--red-text); border-color: #F09595; }
-
-    /* ── RESUMO ── */
-    .resumo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .resumo-card { background: var(--bg-secondary); border-radius: var(--radius-md); padding: 12px 14px; }
-    .resumo-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
-    .resumo-val { font-size: 20px; font-weight: 600; }
-    .db-info { margin-top: 14px; background: var(--bg-secondary); border-radius: var(--radius-md); padding: 12px 14px; font-size: 12px; }
-    .db-info-label { color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
-    .db-info code { font-size: 11px; background: var(--bg-page); padding: 1px 6px; border-radius: 4px; font-family: monospace; color: var(--text-primary); }
-
-    /* ── ANÁLISE ── */
-    .comp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
-    .delta-card { background: var(--bg-primary); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; }
-    .delta-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
-    .delta-val { font-size: 22px; font-weight: 700; }
-    .d-pos { color: var(--green); }
-    .d-neg { color: var(--red); }
-    .delta-sub { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
-    .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
-    .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 10px; }
-    .leg-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
-    .leg-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
-    .filter-row { display: flex; align-items: center; gap: 10px; }
-    .filter-row select { font-size: 13px; padding: 6px 10px; border-radius: var(--radius-md); border: 1px solid var(--border-md); background: var(--bg-primary); color: var(--text-primary); }
-    .vs-sep { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
-
-    /* ── SPINNER ── */
-    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #9FE1CB; border-top-color: var(--green); border-radius: 50%; animation: spin .7s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .empty-state { text-align: center; padding: 28px; color: var(--text-secondary); font-size: 13px; }
-
-    /* ── UTILS ── */
-    select, input { cursor: pointer; }
-    .mono { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; }
+    .main { margin-left:56px; flex:1; min-width:0; padding:24px; }
+    .screen { display:none; } .screen.active { display:block; }
+    .top-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+    .page-title { font-size:18px; font-weight:600; }
+    .page-sub { font-size:13px; color:var(--text-secondary); margin-top:2px; }
+    .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-bottom:20px; }
+    .kpi-card { background:var(--bg-primary); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px 18px; }
+    .kpi-icon { font-size:20px; color:var(--green); margin-bottom:8px; }
+    .kpi-label { font-size:12px; color:var(--text-secondary); margin-bottom:3px; }
+    .kpi-value { font-size:22px; font-weight:600; }
+    .kpi-sub { font-size:11px; color:var(--text-secondary); margin-top:2px; }
+    .mid-grid { display:grid; grid-template-columns:200px 1fr; gap:14px; margin-bottom:16px; }
+    .card { background:var(--bg-primary); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px 18px; }
+    .card-label { font-size:11px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:.06em; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; }
+    .bottom-card { background:var(--bg-primary); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px 18px; margin-bottom:16px; }
+    .rank-item { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); }
+    .rank-item:last-child { border-bottom:none; }
+    .rank-av { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:600; flex-shrink:0; }
+    .rank-name { font-size:13px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .rank-val { font-size:12px; font-weight:600; color:var(--green); }
+    .form-2col { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px; }
+    .form-group { margin-bottom:13px; }
+    .form-label { font-size:12px; color:var(--text-secondary); margin-bottom:5px; display:block; font-weight:500; }
+    .form-input { width:100%; font-size:14px; padding:8px 11px; border-radius:var(--radius-md); border:1px solid var(--border-md); background:var(--bg-primary); color:var(--text-primary); transition:border-color .15s,box-shadow .15s; }
+    .form-input:focus { outline:none; border-color:var(--green); box-shadow:0 0 0 3px rgba(29,158,117,.12); }
+    .time-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .btn-save { width:100%; padding:10px; background:var(--green); color:#fff; border:none; border-radius:var(--radius-md); font-size:14px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:background .15s; }
+    .btn-save:hover { background:var(--green-dark); } .btn-save:disabled { background:#9FE1CB; cursor:not-allowed; }
+    .msg { border-radius:var(--radius-md); padding:10px 14px; font-size:13px; margin-bottom:13px; display:none; align-items:center; gap:8px; }
+    .msg-ok { background:var(--green-light); color:var(--green-text); border:1px solid #9FE1CB; }
+    .msg-err { background:var(--red-light); color:var(--red-text); border:1px solid #F09595; }
+    .form-error { color:var(--red-text); font-size:12px; margin-top:7px; display:none; }
+    .hist-filters { display:flex; gap:10px; align-items:center; margin-bottom:14px; }
+    .hist-filters select,.hist-filters input { font-size:13px; padding:6px 10px; border-radius:var(--radius-md); border:1px solid var(--border-md); background:var(--bg-primary); color:var(--text-primary); }
+    .hist-filters input { width:180px; }
+    .hist-label { font-size:14px; font-weight:600; }
+    .hist-count { font-size:12px; font-weight:400; color:var(--text-secondary); margin-left:6px; }
+    .table-wrap { overflow-x:auto; }
+    .hist-table { width:100%; border-collapse:collapse; font-size:13px; table-layout:fixed; }
+    .hist-table th { text-align:left; padding:9px 11px; font-size:11px; font-weight:600; color:var(--text-secondary); background:var(--bg-secondary); border-bottom:1px solid var(--border-md); }
+    .hist-table td { padding:9px 11px; border-bottom:1px solid var(--border); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .hist-table tr:hover td { background:var(--bg-secondary); }
+    .badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; }
+    .badge-g { background:var(--green-light); color:var(--green-text); }
+    .btn-del { background:none; border:1px solid var(--border-md); color:var(--text-secondary); border-radius:var(--radius-sm); padding:4px 9px; font-size:12px; cursor:pointer; transition:background .1s,color .1s; }
+    .btn-del:hover { background:var(--red-light); color:var(--red-text); border-color:#F09595; }
+    .resumo-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .resumo-card { background:var(--bg-secondary); border-radius:var(--radius-md); padding:12px 14px; }
+    .resumo-label { font-size:11px; color:var(--text-secondary); margin-bottom:4px; }
+    .resumo-val { font-size:20px; font-weight:600; }
+    .db-info { margin-top:14px; background:var(--bg-secondary); border-radius:var(--radius-md); padding:12px 14px; font-size:12px; }
+    .db-info-label { color:var(--text-secondary); margin-bottom:6px; font-weight:500; }
+    .db-info code { font-size:11px; background:var(--bg-page); padding:1px 6px; border-radius:4px; font-family:monospace; }
+    .comp-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:18px; }
+    .delta-card { background:var(--bg-primary); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px 18px; }
+    .delta-label { font-size:12px; color:var(--text-secondary); margin-bottom:6px; }
+    .delta-val { font-size:22px; font-weight:700; }
+    .d-pos { color:var(--green); } .d-neg { color:var(--red); }
+    .delta-sub { font-size:12px; color:var(--text-secondary); margin-top:3px; }
+    .chart-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+    .legend { display:flex; flex-wrap:wrap; gap:14px; margin-bottom:10px; }
+    .leg-item { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-secondary); }
+    .leg-dot { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
+    .filter-row { display:flex; align-items:center; gap:10px; }
+    .filter-row select,.filter-row button { font-size:13px; padding:6px 10px; border-radius:var(--radius-md); border:1px solid var(--border-md); background:var(--bg-primary); color:var(--text-primary); cursor:pointer; }
+    .spinner { display:inline-block; width:14px; height:14px; border:2px solid #9FE1CB; border-top-color:var(--green); border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .empty-state { text-align:center; padding:28px; color:var(--text-secondary); font-size:13px; }
+    .mono { font-family:'SF Mono','Fira Code',monospace; font-size:12px; }
+    select,input { cursor:pointer; }
   </style>
 </head>
 <body>
-<div class="app">
 
-  <!-- SIDEBAR -->
+<!-- ══════════════════════════════════════
+     TELA DE LOGIN
+══════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon">SAP</div>
+      <div>
+        <div class="login-logo-title">Sistema de Análise de Armazém</div>
+        <div class="login-logo-sub">Sistema de Análise de Armazém</div>
+      </div>
+    </div>
+    <div class="login-heading">Bem-vindo!</div>
+    <div class="login-sub">Faça login para acessar o painel.</div>
+
+    <div class="login-group">
+      <label class="login-label">E-mail</label>
+      <input class="login-input" id="l-email" type="email" placeholder="seu@email.com" autocomplete="username">
+    </div>
+    <div class="login-group">
+      <label class="login-label">Senha</label>
+      <div class="login-input-wrap">
+        <input class="login-input" id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')fazerLogin()">
+        <button class="login-eye" onclick="toggleSenha()" id="eye-btn" aria-label="Mostrar senha">
+          <i class="ti ti-eye" id="eye-icon"></i>
+        </button>
+      </div>
+    </div>
+
+    <button class="login-btn" id="login-btn" onclick="fazerLogin()">
+      <i class="ti ti-lock-open"></i> Entrar
+    </button>
+
+    <div class="login-error" id="login-error">
+      <i class="ti ti-alert-circle"></i>
+      <span id="login-error-txt"></span>
+    </div>
+
+    <div class="login-footer">
+      Sistema de uso interno — acesso restrito
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     APP (oculto até login)
+══════════════════════════════════════ -->
+<div class="app" id="app-screen" style="display:none;">
+
   <aside class="sidebar">
     <div class="sidebar-logo">SAP</div>
     <nav class="nav-section">
@@ -316,114 +258,72 @@
         <i class="ti ti-chart-bar"></i>
       </button>
     </nav>
-    <div class="db-pill" title="Status do banco">
-      <div class="db-dot" id="db-dot"></div>
-    </div>
+    <div class="db-dot-wrap"><div class="db-dot" id="db-dot" title="Status Firestore"></div></div>
+    <div class="nav-user" id="user-avatar" data-tip="Sair" onclick="fazerLogout()" aria-label="Sair"></div>
   </aside>
 
-  <!-- MAIN -->
   <main class="main">
 
-    <!-- ── TELA 1: DASHBOARD ── -->
+    <!-- DASHBOARD -->
     <section class="screen active" id="screen-dash">
       <div class="top-row">
-        <div>
-          <div class="page-title">Dashboard</div>
-          <div class="page-sub">Performance da equipe de picking</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;">
+        <div><div class="page-title">Dashboard</div><div class="page-sub">Performance da equipe de picking</div></div>
+        <div class="filter-row">
           <select id="filtro-mes" onchange="renderDash()">
-            <option value="2026-01">Janeiro 2026</option>
-            <option value="2026-02">Fevereiro 2026</option>
-            <option value="2026-03">Março 2026</option>
-            <option value="2026-04">Abril 2026</option>
+            <option value="2026-01">Janeiro 2026</option><option value="2026-02">Fevereiro 2026</option>
+            <option value="2026-03">Março 2026</option><option value="2026-04">Abril 2026</option>
             <option value="2026-05" selected>Maio 2026</option>
           </select>
-          <button onclick="carregarPedidos()" style="padding:6px 10px;border-radius:var(--radius-md);border:1px solid var(--border-md);background:var(--bg-primary);cursor:pointer;font-size:13px;color:var(--text-secondary);" title="Atualizar">
-            <i class="ti ti-refresh"></i>
-          </button>
+          <button onclick="carregarPedidos()" title="Atualizar"><i class="ti ti-refresh"></i></button>
         </div>
       </div>
-
       <div class="kpi-grid" id="kpi-grid">
         <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-clipboard-list"></i></div><div class="kpi-label">Total de pedidos</div><div class="kpi-value">—</div></div>
         <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-package"></i></div><div class="kpi-label">Total de produtos</div><div class="kpi-value">—</div></div>
         <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-trophy"></i></div><div class="kpi-label">Melhor colaborador</div><div class="kpi-value">—</div></div>
         <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-bolt"></i></div><div class="kpi-label">Recorde velocidade</div><div class="kpi-value">—</div></div>
       </div>
-
       <div class="mid-grid">
         <div class="card">
           <div class="card-label">Ranking</div>
           <div id="ranking-list"><div class="empty-state"><div class="spinner"></div></div></div>
         </div>
         <div class="card">
-          <div class="card-label">
-            Produção por colaborador
-            <span style="font-size:10px;font-weight:400;color:var(--text-tertiary);">passe o mouse nas barras</span>
-          </div>
-          <div style="position:relative;height:210px;">
-            <canvas id="barChart" role="img" aria-label="Produção por colaborador"></canvas>
-          </div>
+          <div class="card-label">Produção por colaborador <span style="font-size:10px;font-weight:400;color:var(--text-tertiary);">hover para detalhes</span></div>
+          <div style="position:relative;height:210px;"><canvas id="barChart"></canvas></div>
         </div>
       </div>
-
       <div class="bottom-card">
         <div class="card-label">Evolução semanal</div>
-        <div style="position:relative;height:140px;">
-          <canvas id="lineChart" role="img" aria-label="Evolução semanal da produção"></canvas>
-        </div>
+        <div style="position:relative;height:140px;"><canvas id="lineChart"></canvas></div>
       </div>
     </section>
 
-    <!-- ── TELA 2: PEDIDOS ── -->
+    <!-- PEDIDOS -->
     <section class="screen" id="screen-pedidos">
       <div class="top-row">
-        <div>
-          <div class="page-title">Cadastro de pedidos</div>
-          <div class="page-sub">Dados salvos em tempo real no Firestore</div>
-        </div>
+        <div><div class="page-title">Cadastro de pedidos</div><div class="page-sub">Dados salvos em tempo real no Firestore</div></div>
       </div>
-
       <div class="form-2col">
         <div class="card">
           <div class="card-label"><i class="ti ti-plus"></i> Novo registro</div>
           <div id="msg-ok" class="msg msg-ok"><i class="ti ti-circle-check"></i> Pedido salvo com sucesso!</div>
           <div id="msg-err" class="msg msg-err"><i class="ti ti-alert-circle"></i> <span id="msg-err-txt"></span></div>
-
-          <div class="form-group">
-            <label class="form-label">Nº do movimento *</label>
-            <input class="form-input" id="f-mov" type="text" placeholder="Ex: MOV-2026-001">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Data *</label>
-            <input class="form-input" id="f-data" type="date">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Quantidade total *</label>
-            <input class="form-input" id="f-qtd" type="number" min="1" placeholder="Ex: 120">
-          </div>
+          <div class="form-group"><label class="form-label">Nº do movimento *</label><input class="form-input" id="f-mov" type="text" placeholder="Ex: MOV-2026-001"></div>
+          <div class="form-group"><label class="form-label">Data *</label><input class="form-input" id="f-data" type="date"></div>
+          <div class="form-group"><label class="form-label">Quantidade total *</label><input class="form-input" id="f-qtd" type="number" min="1" placeholder="Ex: 120"></div>
           <div class="form-group">
             <label class="form-label">Colaborador *</label>
             <input class="form-input" id="f-colab" type="text" placeholder="Digite o nome do colaborador" list="colab-list" autocomplete="off">
             <datalist id="colab-list"></datalist>
           </div>
           <div class="time-row">
-            <div class="form-group">
-              <label class="form-label">Hora inicial *</label>
-              <input class="form-input" id="f-ti" type="time" step="1">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Hora final *</label>
-              <input class="form-input" id="f-tf" type="time" step="1">
-            </div>
+            <div class="form-group"><label class="form-label">Hora inicial *</label><input class="form-input" id="f-ti" type="time" step="1"></div>
+            <div class="form-group"><label class="form-label">Hora final *</label><input class="form-input" id="f-tf" type="time" step="1"></div>
           </div>
-          <button class="btn-save" id="btn-salvar" onclick="salvarPedido()">
-            <i class="ti ti-device-floppy"></i> Salvar no Firestore
-          </button>
+          <button class="btn-save" id="btn-salvar" onclick="salvarPedido()"><i class="ti ti-device-floppy"></i> Salvar no Firestore</button>
           <div class="form-error" id="form-error"></div>
         </div>
-
         <div class="card">
           <div class="card-label">Resumo geral</div>
           <div class="resumo-grid">
@@ -439,100 +339,73 @@
           </div>
         </div>
       </div>
-
       <div class="card">
         <div class="hist-filters">
           <span class="hist-label">Histórico <span id="hist-count" class="hist-count"></span></span>
           <select id="hist-mes" onchange="renderHistorico()" style="margin-left:auto;">
             <option value="all">Todos os meses</option>
-            <option value="2026-01">Jan 2026</option>
-            <option value="2026-02">Fev 2026</option>
-            <option value="2026-03">Mar 2026</option>
-            <option value="2026-04">Abr 2026</option>
+            <option value="2026-01">Jan 2026</option><option value="2026-02">Fev 2026</option>
+            <option value="2026-03">Mar 2026</option><option value="2026-04">Abr 2026</option>
             <option value="2026-05">Mai 2026</option>
           </select>
           <input id="hist-colab-filter" type="text" placeholder="Filtrar colaborador..." oninput="renderHistorico()">
         </div>
         <div class="table-wrap">
           <table class="hist-table">
-            <thead>
-              <tr>
-                <th style="width:130px;">Movimento</th>
-                <th style="width:90px;">Data</th>
-                <th style="width:80px;">Qtd.</th>
-                <th style="width:160px;">Colaborador</th>
-                <th style="width:80px;">T. Inicial</th>
-                <th style="width:80px;">T. Final</th>
-                <th style="width:75px;">Duração</th>
-                <th style="width:60px;"></th>
-              </tr>
-            </thead>
-            <tbody id="hist-body">
-              <tr><td colspan="8" class="empty-state"><div class="spinner"></div> Carregando...</td></tr>
-            </tbody>
+            <thead><tr>
+              <th style="width:130px;">Movimento</th><th style="width:90px;">Data</th><th style="width:80px;">Qtd.</th>
+              <th style="width:160px;">Colaborador</th><th style="width:80px;">T. Inicial</th>
+              <th style="width:80px;">T. Final</th><th style="width:75px;">Duração</th><th style="width:60px;"></th>
+            </tr></thead>
+            <tbody id="hist-body"><tr><td colspan="8" class="empty-state"><div class="spinner"></div> Carregando...</td></tr></tbody>
           </table>
         </div>
       </div>
     </section>
 
-    <!-- ── TELA 3: ANÁLISE ── -->
+    <!-- ANÁLISE -->
     <section class="screen" id="screen-analise">
       <div class="top-row">
-        <div>
-          <div class="page-title">Análise comparativa</div>
-          <div class="page-sub">Avaliação de desempenho entre períodos</div>
-        </div>
+        <div><div class="page-title">Análise comparativa</div><div class="page-sub">Avaliação de desempenho entre períodos</div></div>
         <div class="filter-row">
-          <select id="mes-a" onchange="renderAnalise()">
-            <option value="2026-04" selected>Abr 2026</option>
-            <option value="2026-05">Mai 2026</option>
-          </select>
-          <span class="vs-sep">vs</span>
-          <select id="mes-b" onchange="renderAnalise()">
-            <option value="2026-04">Abr 2026</option>
-            <option value="2026-05" selected>Mai 2026</option>
-          </select>
+          <select id="mes-a" onchange="renderAnalise()"><option value="2026-04" selected>Abr 2026</option><option value="2026-05">Mai 2026</option></select>
+          <span style="font-size:13px;color:var(--text-secondary);font-weight:500;">vs</span>
+          <select id="mes-b" onchange="renderAnalise()"><option value="2026-04">Abr 2026</option><option value="2026-05" selected>Mai 2026</option></select>
         </div>
       </div>
-
       <div class="comp-grid" id="delta-cards">
         <div class="delta-card"><div class="delta-label">Variação em pedidos</div><div class="delta-val">—</div></div>
         <div class="delta-card"><div class="delta-label">Variação em produtos</div><div class="delta-val">—</div></div>
         <div class="delta-card"><div class="delta-label">Variação tempo médio</div><div class="delta-val">—</div></div>
       </div>
-
       <div class="chart-row">
         <div class="card">
           <div class="card-label">Volume de pedidos por colaborador</div>
           <div class="legend" id="leg-bar"></div>
-          <div style="position:relative;height:200px;">
-            <canvas id="groupedBar" role="img" aria-label="Barras agrupadas comparando pedidos entre dois meses"></canvas>
-          </div>
+          <div style="position:relative;height:200px;"><canvas id="groupedBar"></canvas></div>
         </div>
         <div class="card">
           <div class="card-label">Produtividade por colaborador</div>
           <div class="legend" id="leg-pie"></div>
-          <div style="position:relative;height:200px;">
-            <canvas id="pieChart" role="img" aria-label="Pizza de produtividade por colaborador"></canvas>
-          </div>
+          <div style="position:relative;height:200px;"><canvas id="pieChart"></canvas></div>
         </div>
       </div>
-
       <div class="card">
         <div class="card-label">Evolução semanal sobreposta</div>
         <div class="legend" id="leg-line"></div>
-        <div style="position:relative;height:160px;">
-          <canvas id="overlapLine" role="img" aria-label="Linhas sobrepostas com evolução semanal dos dois meses"></canvas>
-        </div>
+        <div style="position:relative;height:160px;"><canvas id="overlapLine"></canvas></div>
       </div>
     </section>
 
   </main>
 </div>
 
-<!-- FIREBASE -->
+<!-- ══════════════════════════════════════
+     FIREBASE + LÓGICA
+══════════════════════════════════════ -->
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -545,6 +418,7 @@ const firebaseConfig = {
 };
 
 const fbApp  = initializeApp(firebaseConfig);
+const auth   = getAuth(fbApp);
 const db     = getFirestore(fbApp);
 const colRef = collection(db, 'pedidos');
 
@@ -552,82 +426,117 @@ const colRef = collection(db, 'pedidos');
 const FILL6   = ['#E6F1FB','#EEEDFE','#FAECE7','#E1F5EE','#FAEEDA','#FBEAF0'];
 const STROKE6 = ['#0C447C','#3C3489','#993C1D','#0F6E56','#633806','#72243E'];
 const PIE6    = ['#378ADD','#7F77DD','#D85A30','#1D9E75','#EF9F27','#D4537E'];
-const MES_NOMES = {
-  '2026-01':'Janeiro 2026','2026-02':'Fevereiro 2026','2026-03':'Março 2026',
-  '2026-04':'Abril 2026','2026-05':'Maio 2026'
-};
+const MES = {'2026-01':'Janeiro 2026','2026-02':'Fevereiro 2026','2026-03':'Março 2026','2026-04':'Abril 2026','2026-05':'Maio 2026'};
 const SEMANAS = ['Sem 1','Sem 2','Sem 3','Sem 4'];
 
 let allPedidos = [];
 let barInst, lineInst, groupedInst, overlapInst, pieInst;
 
-function setDot(st) {
-  const d = document.getElementById('db-dot');
-  d.className = 'db-dot' + (st === 'ok' ? ' ok' : st === 'err' ? ' err' : '');
-}
+/* ── AUTH STATE ── */
+onAuthStateChanged(auth, user => {
+  if (user) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display  = 'flex';
+    const initials = (user.email||'U').substring(0,2).toUpperCase();
+    document.getElementById('user-avatar').textContent = initials;
+    document.getElementById('user-avatar').setAttribute('data-tip', 'Sair — ' + user.email);
+    carregarPedidos();
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app-screen').style.display   = 'none';
+  }
+});
 
-function getInit(n) { return (n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
-function durMin(ti, tf) {
+/* ── LOGIN ── */
+async function fazerLogin() {
+  const email = document.getElementById('l-email').value.trim();
+  const pass  = document.getElementById('l-pass').value;
+  const btn   = document.getElementById('login-btn');
+  const errEl = document.getElementById('login-error');
+  const errTx = document.getElementById('login-error-txt');
+  errEl.style.display = 'none';
+  if (!email || !pass) { errTx.textContent = 'Preencha e-mail e senha.'; errEl.style.display='flex'; return; }
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="border-color:#9FE1CB;border-top-color:#fff;width:16px;height:16px;border-width:2px;"></div> Entrando...';
   try {
-    const [h1,m1,s1] = (ti||'0:0:0').split(':').map(Number);
-    const [h2,m2,s2] = (tf||'0:0:0').split(':').map(Number);
-    const d = Math.round(((h2*3600+m2*60+s2)-(h1*3600+m1*60+s1))/60);
-    return d > 0 ? d : 0;
-  } catch { return 0; }
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    const msgs = {
+      'auth/user-not-found':     'Usuário não encontrado.',
+      'auth/wrong-password':     'Senha incorreta.',
+      'auth/invalid-email':      'E-mail inválido.',
+      'auth/invalid-credential': 'E-mail ou senha incorretos.',
+      'auth/too-many-requests':  'Muitas tentativas. Aguarde alguns minutos.',
+    };
+    errTx.textContent = msgs[e.code] || 'Erro ao fazer login. Tente novamente.';
+    errEl.style.display = 'flex';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-lock-open"></i> Entrar';
+  }
 }
 
-/* ── CARREGAR PEDIDOS ── */
+async function fazerLogout() {
+  if (confirm('Deseja sair do sistema?')) await signOut(auth);
+}
+
+function toggleSenha() {
+  const inp  = document.getElementById('l-pass');
+  const icon = document.getElementById('eye-icon');
+  if (inp.type === 'password') { inp.type = 'text'; icon.className = 'ti ti-eye-off'; }
+  else { inp.type = 'password'; icon.className = 'ti ti-eye'; }
+}
+
+window.fazerLogin  = fazerLogin;
+window.fazerLogout = fazerLogout;
+window.toggleSenha = toggleSenha;
+
+/* ── UTILS ── */
+function setDot(st) { const d=document.getElementById('db-dot'); d.className='db-dot'+(st==='ok'?' ok':st==='err'?' err':''); }
+function getInit(n) { return (n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
+function durMin(ti,tf) {
+  try { const[h1,m1,s1]=(ti||'0:0:0').split(':').map(Number);const[h2,m2,s2]=(tf||'0:0:0').split(':').map(Number);const d=Math.round(((h2*3600+m2*60+s2)-(h1*3600+m1*60+s1))/60);return d>0?d:0; } catch{return 0;}
+}
+
+/* ── CARREGAR ── */
 async function carregarPedidos() {
   try {
-    const q    = query(colRef, orderBy('criadoEm','desc'));
-    const snap = await getDocs(q);
-    allPedidos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const snap = await getDocs(query(colRef, orderBy('criadoEm','desc')));
+    allPedidos = snap.docs.map(d=>({id:d.id,...d.data()}));
     setDot('ok');
     const colabs = [...new Set(allPedidos.map(p=>p.colab).filter(Boolean))];
-    const dl = document.getElementById('colab-list');
-    dl.innerHTML = '';
-    colabs.forEach(n => { const o = document.createElement('option'); o.value = n; dl.appendChild(o); });
-    renderHistorico();
-    renderDash();
+    const dl = document.getElementById('colab-list'); dl.innerHTML='';
+    colabs.forEach(n=>{const o=document.createElement('option');o.value=n;dl.appendChild(o);});
+    renderHistorico(); renderDash();
   } catch(e) {
     setDot('err');
-    document.getElementById('hist-body').innerHTML =
-      `<tr><td colspan="8" class="empty-state" style="color:#A32D2D;">
-         <i class="ti ti-alert-circle"></i> Erro ao carregar — verifique as regras do Firestore
-       </td></tr>`;
-    console.error(e);
+    document.getElementById('hist-body').innerHTML=`<tr><td colspan="8" class="empty-state" style="color:#A32D2D;"><i class="ti ti-alert-circle"></i> Erro ao carregar — verifique as regras do Firestore</td></tr>`;
   }
 }
 
 /* ── HISTÓRICO ── */
 function renderHistorico() {
-  const mes   = document.getElementById('hist-mes').value;
-  const cf    = (document.getElementById('hist-colab-filter').value||'').toLowerCase();
-  const dados = allPedidos.filter(p => {
-    if (mes !== 'all' && !(p.data||'').startsWith(mes)) return false;
-    if (cf && !(p.colab||'').toLowerCase().includes(cf)) return false;
+  const mes=document.getElementById('hist-mes').value;
+  const cf=(document.getElementById('hist-colab-filter').value||'').toLowerCase();
+  const dados=allPedidos.filter(p=>{
+    if(mes!=='all'&&!(p.data||'').startsWith(mes))return false;
+    if(cf&&!(p.colab||'').toLowerCase().includes(cf))return false;
     return true;
   });
-  document.getElementById('hist-count').textContent = `(${dados.length} registros)`;
-  const body = document.getElementById('hist-body');
-  if (!dados.length) {
-    body.innerHTML = `<tr><td colspan="8" class="empty-state">Nenhum registro encontrado</td></tr>`;
-    updateResumo(); return;
-  }
-  const allCols = [...new Set(allPedidos.map(p=>p.colab).filter(Boolean))];
-  body.innerHTML = dados.map(p => {
-    const dur = durMin(p.ti, p.tf);
-    const ci  = allCols.indexOf(p.colab) % 6;
-    return `<tr>
+  document.getElementById('hist-count').textContent=`(${dados.length} registros)`;
+  const body=document.getElementById('hist-body');
+  if(!dados.length){body.innerHTML=`<tr><td colspan="8" class="empty-state">Nenhum registro encontrado</td></tr>`;updateResumo();return;}
+  const allCols=[...new Set(allPedidos.map(p=>p.colab).filter(Boolean))];
+  body.innerHTML=dados.map(p=>{
+    const dur=durMin(p.ti,p.tf); const ci=allCols.indexOf(p.colab)%6;
+    return`<tr>
       <td><span class="mono">${p.mov||'—'}</span></td>
       <td>${(p.data||'').split('-').reverse().join('/')}</td>
       <td><span class="badge badge-g">${(p.qtd||0).toLocaleString('pt-BR')}</span></td>
       <td style="display:flex;align-items:center;gap:6px;padding:9px 11px;">
-        <div class="rank-av" style="background:${FILL6[ci]};color:${STROKE6[ci]};width:22px;height:22px;font-size:9px;">${getInit(p.colab)}</div>
-        ${p.colab||'—'}
+        <div class="rank-av" style="background:${FILL6[ci]};color:${STROKE6[ci]};width:22px;height:22px;font-size:9px;">${getInit(p.colab)}</div>${p.colab||'—'}
       </td>
-      <td class="mono">${p.ti||'—'}</td>
-      <td class="mono">${p.tf||'—'}</td>
+      <td class="mono">${p.ti||'—'}</td><td class="mono">${p.tf||'—'}</td>
       <td>${dur} min</td>
       <td><button class="btn-del" onclick="window._del('${p.id}')" aria-label="Excluir"><i class="ti ti-trash"></i></button></td>
     </tr>`;
@@ -636,234 +545,109 @@ function renderHistorico() {
 }
 
 function updateResumo() {
-  document.getElementById('r-pedidos').textContent    = allPedidos.length;
-  document.getElementById('r-produtos').textContent   = allPedidos.reduce((s,p)=>s+(p.qtd||0),0).toLocaleString('pt-BR');
-  document.getElementById('r-colab-count').textContent = new Set(allPedidos.map(p=>p.colab).filter(Boolean)).size;
-  const ts = allPedidos.map(p=>durMin(p.ti,p.tf)).filter(v=>v>0);
-  document.getElementById('r-tempo').textContent = ts.length ? Math.round(ts.reduce((a,b)=>a+b,0)/ts.length) : 0;
+  document.getElementById('r-pedidos').textContent=allPedidos.length;
+  document.getElementById('r-produtos').textContent=allPedidos.reduce((s,p)=>s+(p.qtd||0),0).toLocaleString('pt-BR');
+  document.getElementById('r-colab-count').textContent=new Set(allPedidos.map(p=>p.colab).filter(Boolean)).size;
+  const ts=allPedidos.map(p=>durMin(p.ti,p.tf)).filter(v=>v>0);
+  document.getElementById('r-tempo').textContent=ts.length?Math.round(ts.reduce((a,b)=>a+b,0)/ts.length):0;
 }
 
 /* ── SALVAR ── */
 async function salvarPedido() {
-  const mov   = document.getElementById('f-mov').value.trim();
-  const data  = document.getElementById('f-data').value;
-  const qtd   = parseInt(document.getElementById('f-qtd').value);
-  const colab = document.getElementById('f-colab').value.trim();
-  const ti    = document.getElementById('f-ti').value;
-  const tf    = document.getElementById('f-tf').value;
-  const err   = document.getElementById('form-error');
-  const msgOk = document.getElementById('msg-ok');
-  const msgErr= document.getElementById('msg-err');
-  err.style.display = msgOk.style.display = msgErr.style.display = 'none';
-
-  if (!mov||!data||!qtd||!colab||!ti||!tf) {
-    err.textContent = 'Preencha todos os campos obrigatórios.';
-    err.style.display = 'block'; return;
-  }
-  if (allPedidos.find(p=>p.mov===mov)) {
-    err.textContent = 'Número de movimento já cadastrado.';
-    err.style.display = 'block'; return;
-  }
-  const btn = document.getElementById('btn-salvar');
-  btn.disabled = true;
-  btn.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px;"></div> Salvando...';
+  const mov=document.getElementById('f-mov').value.trim();
+  const data=document.getElementById('f-data').value;
+  const qtd=parseInt(document.getElementById('f-qtd').value);
+  const colab=document.getElementById('f-colab').value.trim();
+  const ti=document.getElementById('f-ti').value;
+  const tf=document.getElementById('f-tf').value;
+  const err=document.getElementById('form-error');
+  const msgOk=document.getElementById('msg-ok'); const msgErr=document.getElementById('msg-err');
+  err.style.display=msgOk.style.display=msgErr.style.display='none';
+  if(!mov||!data||!qtd||!colab||!ti||!tf){err.textContent='Preencha todos os campos obrigatórios.';err.style.display='block';return;}
+  if(allPedidos.find(p=>p.mov===mov)){err.textContent='Número de movimento já cadastrado.';err.style.display='block';return;}
+  const btn=document.getElementById('btn-salvar');
+  btn.disabled=true; btn.innerHTML='<div class="spinner" style="width:14px;height:14px;border-width:2px;"></div> Salvando...';
   try {
-    await addDoc(colRef, { mov, data, qtd, colab, ti, tf, criadoEm: serverTimestamp() });
-    ['f-mov','f-data','f-qtd','f-colab','f-ti','f-tf'].forEach(id => document.getElementById(id).value='');
-    msgOk.style.display = 'flex';
-    setTimeout(()=>msgOk.style.display='none', 4000);
+    await addDoc(colRef,{mov,data,qtd,colab,ti,tf,criadoEm:serverTimestamp()});
+    ['f-mov','f-data','f-qtd','f-colab','f-ti','f-tf'].forEach(id=>document.getElementById(id).value='');
+    msgOk.style.display='flex'; setTimeout(()=>msgOk.style.display='none',4000);
     await carregarPedidos();
-  } catch(e) {
-    document.getElementById('msg-err-txt').textContent = e.message;
-    msgErr.style.display = 'flex';
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="ti ti-device-floppy"></i> Salvar no Firestore';
-  }
+  } catch(e) { document.getElementById('msg-err-txt').textContent=e.message; msgErr.style.display='flex'; }
+  finally { btn.disabled=false; btn.innerHTML='<i class="ti ti-device-floppy"></i> Salvar no Firestore'; }
 }
 
-/* ── DELETAR ── */
 window._del = async function(id) {
-  if (!confirm('Excluir este pedido do banco de dados?')) return;
-  try { await deleteDoc(doc(db,'pedidos',id)); await carregarPedidos(); }
-  catch(e) { alert('Erro ao excluir: '+e.message); }
+  if(!confirm('Excluir este pedido do banco de dados?'))return;
+  try{await deleteDoc(doc(db,'pedidos',id));await carregarPedidos();}catch(e){alert('Erro: '+e.message);}
 };
 
 /* ── DASHBOARD ── */
-function pedidosPorMes(mes) { return allPedidos.filter(p=>(p.data||'').startsWith(mes)); }
+function pedidosPorMes(mes){return allPedidos.filter(p=>(p.data||'').startsWith(mes));}
 
 function renderDash() {
-  const mes = document.getElementById('filtro-mes').value;
-  const d   = pedidosPorMes(mes);
-  const colabMap = {};
-  d.forEach(p => {
-    if (!p.colab) return;
-    if (!colabMap[p.colab]) colabMap[p.colab] = { nome:p.colab, pedidos:0, qtd:0, tempos:[] };
-    colabMap[p.colab].pedidos++;
-    colabMap[p.colab].qtd += (p.qtd||0);
-    const t = durMin(p.ti,p.tf);
-    if (t > 0) colabMap[p.colab].tempos.push(t);
-  });
-  const colabs  = Object.values(colabMap).sort((a,b)=>b.qtd-a.qtd);
-  const totP    = d.length;
-  const totQ    = d.reduce((s,p)=>s+(p.qtd||0),0);
-  const melhor  = colabs[0];
-  const recC    = colabs.reduce((a,b)=>{
-    const ma=a.tempos.length?Math.min(...a.tempos):9999;
-    const mb=b.tempos.length?Math.min(...b.tempos):9999;
-    return ma<mb?a:b;
-  },{nome:'—',tempos:[]});
-  const recMin = recC.tempos.length ? Math.min(...recC.tempos) : '—';
-
-  document.getElementById('kpi-grid').innerHTML = [
-    {ic:'ti-clipboard-list', lb:'Total de pedidos',    val:totP,                                    sub:MES_NOMES[mes]||mes},
-    {ic:'ti-package',        lb:'Total de produtos',   val:totQ.toLocaleString('pt-BR'),            sub:'unidades coletadas'},
-    {ic:'ti-trophy',         lb:'Melhor colaborador',  val:melhor?melhor.nome.split(' ')[0]:'—',    sub:melhor?melhor.qtd.toLocaleString('pt-BR')+' produtos':'sem dados'},
-    {ic:'ti-bolt',           lb:'Recorde velocidade',  val:recC.nome!=='—'?recC.nome.split(' ')[0]:'—', sub:recMin!=='—'?recMin+' min por pedido':'sem dados'},
-  ].map(k=>`<div class="kpi-card">
-    <div class="kpi-icon"><i class="ti ${k.ic}"></i></div>
-    <div class="kpi-label">${k.lb}</div>
-    <div class="kpi-value">${k.val}</div>
-    <div class="kpi-sub">${k.sub}</div>
-  </div>`).join('');
-
-  const allCols = [...new Set(allPedidos.map(p=>p.colab).filter(Boolean))];
-  document.getElementById('ranking-list').innerHTML = colabs.length
-    ? colabs.map((c,i)=>{
-        const ci = allCols.indexOf(c.nome)%6;
-        const medals=['🥇','🥈','🥉'];
-        return `<div class="rank-item">
-          <div style="font-size:11px;color:var(--text-tertiary);width:18px;">${medals[i]||i+1}</div>
-          <div class="rank-av" style="background:${FILL6[ci]};color:${STROKE6[ci]};">${getInit(c.nome)}</div>
-          <div class="rank-name">${c.nome}</div>
-          <div class="rank-val">${c.qtd.toLocaleString('pt-BR')}</div>
-        </div>`;
-      }).join('')
-    : '<div class="empty-state">Nenhum dado neste mês</div>';
-
-  if (barInst) barInst.destroy();
-  if (colabs.length) {
-    barInst = new Chart(document.getElementById('barChart'), {
-      type: 'bar',
-      data: {
-        labels: colabs.map(c=>c.nome.split(' ')[0]),
-        datasets: [{
-          label:'Produtos',
-          data: colabs.map(c=>c.qtd),
-          backgroundColor: colabs.map(c=>FILL6[allCols.indexOf(c.nome)%6]),
-          borderColor: colabs.map(c=>STROKE6[allCols.indexOf(c.nome)%6]),
-          borderWidth: 1, borderRadius: 5
-        }]
-      },
-      options: {
-        responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>{const c=colabs[ctx.dataIndex];return[`Pedidos: ${c.pedidos}`,`Produtos: ${c.qtd.toLocaleString('pt-BR')}`];}}} },
-        scales:{ y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:11}}}, x:{grid:{display:false},ticks:{font:{size:11}}} }
-      }
-    });
-  }
-
-  const inicio = new Date(mes+'-01');
-  const sems = SEMANAS.map((_,i)=>
-    d.filter(p=>{ const dt=new Date(p.data); const diff=Math.floor((dt-inicio)/(7*24*3600*1000)); return diff===i; })
-     .reduce((s,p)=>s+(p.qtd||0),0)
-  );
-  if (lineInst) lineInst.destroy();
-  lineInst = new Chart(document.getElementById('lineChart'), {
-    type:'line',
-    data:{ labels:SEMANAS, datasets:[{ label:'Volume', data:sems, borderColor:'#1D9E75', backgroundColor:'rgba(29,158,117,.07)', borderWidth:2, fill:true, tension:.3, pointBackgroundColor:'#1D9E75', pointRadius:4 }] },
-    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:11}}}, x:{grid:{display:false},ticks:{font:{size:11}}} } }
-  });
+  const mes=document.getElementById('filtro-mes').value;
+  const d=pedidosPorMes(mes);
+  const cm={};
+  d.forEach(p=>{if(!p.colab)return;if(!cm[p.colab])cm[p.colab]={nome:p.colab,pedidos:0,qtd:0,tempos:[]};cm[p.colab].pedidos++;cm[p.colab].qtd+=(p.qtd||0);const t=durMin(p.ti,p.tf);if(t>0)cm[p.colab].tempos.push(t);});
+  const colabs=Object.values(cm).sort((a,b)=>b.qtd-a.qtd);
+  const totP=d.length, totQ=d.reduce((s,p)=>s+(p.qtd||0),0);
+  const melhor=colabs[0];
+  const recC=colabs.reduce((a,b)=>{const ma=a.tempos.length?Math.min(...a.tempos):9999,mb=b.tempos.length?Math.min(...b.tempos):9999;return ma<mb?a:b;},{nome:'—',tempos:[]});
+  const recMin=recC.tempos.length?Math.min(...recC.tempos):'—';
+  document.getElementById('kpi-grid').innerHTML=[
+    {ic:'ti-clipboard-list',lb:'Total de pedidos',val:totP,sub:MES[mes]||mes},
+    {ic:'ti-package',lb:'Total de produtos',val:totQ.toLocaleString('pt-BR'),sub:'unidades coletadas'},
+    {ic:'ti-trophy',lb:'Melhor colaborador',val:melhor?melhor.nome.split(' ')[0]:'—',sub:melhor?melhor.qtd.toLocaleString('pt-BR')+' produtos':'sem dados'},
+    {ic:'ti-bolt',lb:'Recorde velocidade',val:recC.nome!=='—'?recC.nome.split(' ')[0]:'—',sub:recMin!=='—'?recMin+' min/pedido':'sem dados'},
+  ].map(k=>`<div class="kpi-card"><div class="kpi-icon"><i class="ti ${k.ic}"></i></div><div class="kpi-label">${k.lb}</div><div class="kpi-value">${k.val}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
+  const allCols=[...new Set(allPedidos.map(p=>p.colab).filter(Boolean))];
+  document.getElementById('ranking-list').innerHTML=colabs.length
+    ?colabs.map((c,i)=>{const ci=allCols.indexOf(c.nome)%6;const medals=['🥇','🥈','🥉'];return`<div class="rank-item"><div style="font-size:11px;color:var(--text-tertiary);width:18px;">${medals[i]||i+1}</div><div class="rank-av" style="background:${FILL6[ci]};color:${STROKE6[ci]};">${getInit(c.nome)}</div><div class="rank-name">${c.nome}</div><div class="rank-val">${c.qtd.toLocaleString('pt-BR')}</div></div>`;}).join('')
+    :'<div class="empty-state">Nenhum dado neste mês</div>';
+  if(barInst)barInst.destroy();
+  if(colabs.length){barInst=new Chart(document.getElementById('barChart'),{type:'bar',data:{labels:colabs.map(c=>c.nome.split(' ')[0]),datasets:[{label:'Produtos',data:colabs.map(c=>c.qtd),backgroundColor:colabs.map(c=>FILL6[allCols.indexOf(c.nome)%6]),borderColor:colabs.map(c=>STROKE6[allCols.indexOf(c.nome)%6]),borderWidth:1,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const c=colabs[ctx.dataIndex];return[`Pedidos: ${c.pedidos}`,`Produtos: ${c.qtd.toLocaleString('pt-BR')}`];}}}},scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});}
+  const inicio=new Date(mes+'-01');
+  const sems=SEMANAS.map((_,i)=>d.filter(p=>{const dt=new Date(p.data);return Math.floor((dt-inicio)/(7*24*3600*1000))===i;}).reduce((s,p)=>s+(p.qtd||0),0));
+  if(lineInst)lineInst.destroy();
+  lineInst=new Chart(document.getElementById('lineChart'),{type:'line',data:{labels:SEMANAS,datasets:[{label:'Volume',data:sems,borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,.07)',borderWidth:2,fill:true,tension:.3,pointBackgroundColor:'#1D9E75',pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
 }
 
 /* ── ANÁLISE ── */
 function renderAnalise() {
-  const ma=document.getElementById('mes-a').value;
-  const mb=document.getElementById('mes-b').value;
+  const ma=document.getElementById('mes-a').value, mb=document.getElementById('mes-b').value;
   const da=pedidosPorMes(ma), db=pedidosPorMes(mb);
-
-  function agrupar(dados){ const m={}; dados.forEach(p=>{ if(!p.colab)return; if(!m[p.colab])m[p.colab]={pedidos:0,qtd:0,tempos:[]}; m[p.colab].pedidos++;m[p.colab].qtd+=(p.qtd||0);const t=durMin(p.ti,p.tf);if(t>0)m[p.colab].tempos.push(t); }); return m; }
-  const gA=agrupar(da), gB=agrupar(db);
+  function ag(dados){const m={};dados.forEach(p=>{if(!p.colab)return;if(!m[p.colab])m[p.colab]={pedidos:0,qtd:0};m[p.colab].pedidos++;m[p.colab].qtd+=(p.qtd||0);});return m;}
+  const gA=ag(da),gB=ag(db);
   const allNames=[...new Set([...Object.keys(gA),...Object.keys(gB)])].sort();
-
-  document.getElementById('leg-bar').innerHTML=`
-    <div class="leg-item"><div class="leg-dot" style="background:#1D9E75;"></div>${MES_NOMES[ma]||ma}</div>
-    <div class="leg-item"><div class="leg-dot" style="background:#378ADD;"></div>${MES_NOMES[mb]||mb}</div>`;
-  document.getElementById('leg-line').innerHTML=`
-    <div class="leg-item"><div class="leg-dot" style="background:#1D9E75;"></div>${MES_NOMES[ma]||ma}</div>
-    <div class="leg-item"><div class="leg-dot" style="background:#378ADD;border:1px dashed #378ADD;background:none;outline:1px dashed #378ADD;"></div>${MES_NOMES[mb]||mb}</div>`;
-
-  const totPA=da.length,totPB=db.length;
-  const totQA=da.reduce((s,p)=>s+(p.qtd||0),0),totQB=db.reduce((s,p)=>s+(p.qtd||0),0);
-  const tA=da.map(p=>durMin(p.ti,p.tf)).filter(v=>v>0);
-  const tB=db.map(p=>durMin(p.ti,p.tf)).filter(v=>v>0);
-  const avgTA=tA.length?Math.round(tA.reduce((a,b)=>a+b,0)/tA.length):0;
-  const avgTB=tB.length?Math.round(tB.reduce((a,b)=>a+b,0)/tB.length):0;
-  function pct(a,b){ if(b===0)return a>0?'+∞%':'0%'; const v=Math.round((a-b)/b*100); return(v>=0?'+':'')+v+'%'; }
-  function cls(a,b,inv){ if(a===b)return''; return (a>b)!==inv?'d-pos':'d-neg'; }
-
-  document.getElementById('delta-cards').innerHTML=[
-    {lb:'Variação em pedidos',       a:totPA,b:totPB,inv:false},
-    {lb:'Variação em produtos',      a:totQA,b:totQB,inv:false},
-    {lb:'Variação tempo médio (min)',a:avgTA,b:avgTB,inv:true},
-  ].map(x=>`<div class="delta-card">
-    <div class="delta-label">${x.lb}</div>
-    <div class="delta-val ${cls(x.a,x.b,x.inv)}">${pct(x.a,x.b)}</div>
-    <div class="delta-sub">${MES_NOMES[ma]||ma}: <strong>${x.a}</strong> | ${MES_NOMES[mb]||mb}: <strong>${x.b}</strong></div>
-  </div>`).join('');
-
+  document.getElementById('leg-bar').innerHTML=`<div class="leg-item"><div class="leg-dot" style="background:#1D9E75;"></div>${MES[ma]||ma}</div><div class="leg-item"><div class="leg-dot" style="background:#378ADD;"></div>${MES[mb]||mb}</div>`;
+  document.getElementById('leg-line').innerHTML=`<div class="leg-item"><div class="leg-dot" style="background:#1D9E75;"></div>${MES[ma]||ma}</div><div class="leg-item"><div class="leg-dot" style="background:#378ADD;outline:1px dashed #378ADD;background:none;"></div>${MES[mb]||mb}</div>`;
+  const totPA=da.length,totPB=db.length,totQA=da.reduce((s,p)=>s+(p.qtd||0),0),totQB=db.reduce((s,p)=>s+(p.qtd||0),0);
+  const tA=da.map(p=>durMin(p.ti,p.tf)).filter(v=>v>0),tB=db.map(p=>durMin(p.ti,p.tf)).filter(v=>v>0);
+  const avgTA=tA.length?Math.round(tA.reduce((a,b)=>a+b,0)/tA.length):0,avgTB=tB.length?Math.round(tB.reduce((a,b)=>a+b,0)/tB.length):0;
+  function pct(a,b){if(b===0)return a>0?'+∞%':'0%';const v=Math.round((a-b)/b*100);return(v>=0?'+':'')+v+'%';}
+  function cls(a,b,inv){if(a===b)return'';return(a>b)!==inv?'d-pos':'d-neg';}
+  document.getElementById('delta-cards').innerHTML=[{lb:'Variação em pedidos',a:totPA,b:totPB,inv:false},{lb:'Variação em produtos',a:totQA,b:totQB,inv:false},{lb:'Variação tempo médio (min)',a:avgTA,b:avgTB,inv:true}].map(x=>`<div class="delta-card"><div class="delta-label">${x.lb}</div><div class="delta-val ${cls(x.a,x.b,x.inv)}">${pct(x.a,x.b)}</div><div class="delta-sub">${MES[ma]||ma}: <strong>${x.a}</strong> | ${MES[mb]||mb}: <strong>${x.b}</strong></div></div>`).join('');
   if(groupedInst)groupedInst.destroy();
-  groupedInst=new Chart(document.getElementById('groupedBar'),{
-    type:'bar',
-    data:{ labels:allNames.map(n=>n.split(' ')[0]), datasets:[
-      {label:MES_NOMES[ma]||ma, data:allNames.map(n=>(gA[n]||{pedidos:0}).pedidos), backgroundColor:'#1D9E75',borderRadius:4},
-      {label:MES_NOMES[mb]||mb, data:allNames.map(n=>(gB[n]||{pedidos:0}).pedidos), backgroundColor:'#378ADD',borderRadius:4}
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}}}}
-  });
-
+  groupedInst=new Chart(document.getElementById('groupedBar'),{type:'bar',data:{labels:allNames.map(n=>n.split(' ')[0]),datasets:[{label:MES[ma]||ma,data:allNames.map(n=>(gA[n]||{pedidos:0}).pedidos),backgroundColor:'#1D9E75',borderRadius:4},{label:MES[mb]||mb,data:allNames.map(n=>(gB[n]||{pedidos:0}).pedidos),backgroundColor:'#378ADD',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
   const pieData=Object.entries(gA).map(([n,v])=>({nome:n,qtd:v.qtd})).sort((a,b)=>b.qtd-a.qtd);
   const totPie=pieData.reduce((s,c)=>s+c.qtd,0);
-  document.getElementById('leg-pie').innerHTML=pieData.map((c,i)=>`
-    <div class="leg-item"><div class="leg-dot" style="background:${PIE6[i%6]};"></div>${c.nome.split(' ')[0]} ${totPie?Math.round(c.qtd/totPie*100):0}%</div>`).join('');
+  document.getElementById('leg-pie').innerHTML=pieData.map((c,i)=>`<div class="leg-item"><div class="leg-dot" style="background:${PIE6[i%6]};"></div>${c.nome.split(' ')[0]} ${totPie?Math.round(c.qtd/totPie*100):0}%</div>`).join('');
   if(pieInst)pieInst.destroy();
-  if(pieData.length){
-    pieInst=new Chart(document.getElementById('pieChart'),{
-      type:'doughnut',
-      data:{ labels:pieData.map(c=>c.nome), datasets:[{data:pieData.map(c=>c.qtd),backgroundColor:PIE6,borderWidth:2,borderColor:'#fff',hoverOffset:8}] },
-      options:{responsive:true,maintainAspectRatio:false,cutout:'50%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const p=totPie?Math.round(ctx.parsed/totPie*100):0;return`${ctx.label}: ${ctx.parsed.toLocaleString('pt-BR')} (${p}%)`;} }}}}
-    });
-  }
-
-  function semVol(dados,mesStr){
-    const inicio=new Date(mesStr+'-01');
-    return SEMANAS.map((_,i)=>dados.filter(p=>{ const dt=new Date(p.data);const diff=Math.floor((dt-inicio)/(7*24*3600*1000));return diff===i; }).reduce((s,p)=>s+(p.qtd||0),0));
-  }
+  if(pieData.length){pieInst=new Chart(document.getElementById('pieChart'),{type:'doughnut',data:{labels:pieData.map(c=>c.nome),datasets:[{data:pieData.map(c=>c.qtd),backgroundColor:PIE6,borderWidth:2,borderColor:'#fff',hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'50%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const p=totPie?Math.round(ctx.parsed/totPie*100):0;return`${ctx.label}: ${ctx.parsed.toLocaleString('pt-BR')} (${p}%)`;}}}}}});}
+  function semVol(dados,mesStr){const inicio=new Date(mesStr+'-01');return SEMANAS.map((_,i)=>dados.filter(p=>{const dt=new Date(p.data);return Math.floor((dt-inicio)/(7*24*3600*1000))===i;}).reduce((s,p)=>s+(p.qtd||0),0));}
   if(overlapInst)overlapInst.destroy();
-  overlapInst=new Chart(document.getElementById('overlapLine'),{
-    type:'line',
-    data:{ labels:SEMANAS, datasets:[
-      {label:MES_NOMES[ma]||ma, data:semVol(da,ma), borderColor:'#1D9E75',borderWidth:2,tension:.3,pointRadius:3,pointBackgroundColor:'#1D9E75',fill:false},
-      {label:MES_NOMES[mb]||mb, data:semVol(db,mb), borderColor:'#378ADD',borderWidth:2,borderDash:[5,4],tension:.3,pointRadius:3,pointBackgroundColor:'#378ADD',fill:false}
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}}}}
-  });
+  overlapInst=new Chart(document.getElementById('overlapLine'),{type:'line',data:{labels:SEMANAS,datasets:[{label:MES[ma]||ma,data:semVol(da,ma),borderColor:'#1D9E75',borderWidth:2,tension:.3,pointRadius:3,pointBackgroundColor:'#1D9E75',fill:false},{label:MES[mb]||mb,data:semVol(db,mb),borderColor:'#378ADD',borderWidth:2,borderDash:[5,4],tension:.3,pointRadius:3,pointBackgroundColor:'#378ADD',fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
 }
 
-/* ── NAVEGAÇÃO ── */
+/* ── NAV ── */
 window.showTab = function(tab) {
-  ['dash','pedidos','analise'].forEach(t=>{
-    document.getElementById('screen-'+t).classList.toggle('active', t===tab);
-    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
-  });
-  if(tab==='dash') renderDash();
-  if(tab==='analise') renderAnalise();
+  ['dash','pedidos','analise'].forEach(t=>{document.getElementById('screen-'+t).classList.toggle('active',t===tab);document.getElementById('tab-'+t).classList.toggle('active',t===tab);});
+  if(tab==='dash')renderDash();
+  if(tab==='analise')renderAnalise();
 };
-window.salvarPedido = salvarPedido;
+window.salvarPedido   = salvarPedido;
 window.renderHistorico = renderHistorico;
 window.carregarPedidos = carregarPedidos;
-
-await carregarPedidos();
 </script>
 </body>
 </html>
