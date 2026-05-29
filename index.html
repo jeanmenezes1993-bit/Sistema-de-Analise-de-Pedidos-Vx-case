@@ -223,7 +223,7 @@
           <div class="form-group"><label class="form-label">Nº do movimento *</label><input class="form-input" id="f-mov" type="text" placeholder="Ex: MOV-2026-001"></div>
           <div class="form-group"><label class="form-label">Data *</label><input class="form-input" id="f-data" type="date"></div>
           <div class="form-group"><label class="form-label">Quantidade total *</label><input class="form-input" id="f-qtd" type="number" min="1" placeholder="Ex: 120"></div>
-          <div class="form-group"><label class="form-label">Colaborador *</label><select class="form-input" id="f-colab"><option value="">Selecione...</option></select></div>
+          <div class="form-group"><label class="form-label">Colaborador *</label><input class="form-input" id="f-colab" type="text" placeholder="Digite o nome do colaborador" list="colab-datalist" autocomplete="off"><datalist id="colab-datalist"></datalist></div>
           <div class="time-row">
             <div class="form-group"><label class="form-label">Hora inicial *</label><input class="form-input" id="f-ti" type="time" step="1" onchange="validarHorarios()"></div>
             <div class="form-group"><label class="form-label">Hora final *</label><input class="form-input" id="f-tf" type="time" step="1" onchange="validarHorarios()"></div>
