@@ -190,6 +190,18 @@
     .colab-stat-val{font-size:20px;font-weight:600;}
 
 
+
+    /* PERFIL */
+    .admin-only { display: none !important; }
+    body.perfil-admin .admin-only { display: revert !important; }
+    body.perfil-admin .admin-flex { display: flex !important; }
+    .admin-flex { display: none !important; }
+    .perfil-badge { display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-left:auto; }
+    .perfil-badge.admin { background:rgba(29,158,117,.25);color:#5DCAA5; }
+    .perfil-badge.diretoria { background:rgba(55,138,221,.2);color:#6DB4F5; }
+    .view-only-banner { display:none;align-items:center;gap:8px;background:#E6F1FB;color:#0C447C;border-radius:var(--radius-md);padding:10px 14px;font-size:13px;margin-bottom:16px;border:1px solid #a0c4f0; }
+    body.perfil-diretoria .view-only-banner { display:flex; }
+
     /* EFICIÊNCIA */
     .efic-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
     .efic-table th{text-align:left;padding:7px 10px;font-size:11px;font-weight:600;color:var(--text-secondary);background:var(--bg-secondary);border-bottom:1px solid var(--border-md);}
@@ -267,7 +279,7 @@
       </div>
       <div class="user-row" onclick="fazerLogout()" title="Clique para sair">
         <div class="user-av" id="user-av">?</div>
-        <div class="user-name" id="user-name">Carregando...</div>
+        <div class="user-name" id="user-name">Carregando...</div><span class="perfil-badge" id="perfil-badge"></span>
         <i class="ti ti-logout user-logout"></i>
       </div>
     </div>
@@ -336,8 +348,10 @@
         <div><div class="page-title">Cadastro de pedidos</div><div class="page-sub">Dados atualizados em tempo real</div></div>
         <div class="rt-indicator"><div class="rt-dot"></div> Sincronizado ao vivo</div>
       </div>
-      <div class="form-2col">
-        <div class="card">
+      <!-- Banner modo visualização -->
+      <div class="view-only-banner"><i class="ti ti-eye"></i> Modo somente leitura — seu perfil permite apenas visualizar o histórico.</div>
+      <div class="form-2col" id="pedidos-form-2col">
+        <div class="card admin-only">
           <div class="card-label"><i class="ti ti-plus"></i> Novo registro</div>
           <div id="msg-ok" class="msg msg-ok"><i class="ti ti-circle-check"></i> Pedido salvo com sucesso!</div>
           <div id="msg-err" class="msg msg-err"><i class="ti ti-alert-circle"></i><span id="msg-err-txt"></span></div>
@@ -407,8 +421,9 @@
       <div class="top-row">
         <div><div class="page-title">Gestão de colaboradores</div><div class="page-sub">Cadastro e controle de status da equipe</div></div>
       </div>
+      <div class="view-only-banner"><i class="ti ti-eye"></i> Modo somente leitura — seu perfil permite apenas visualizar os colaboradores.</div>
       <div class="colab-grid">
-        <div class="card">
+        <div class="card admin-only">
           <div class="card-label" id="colab-form-title"><i class="ti ti-user-plus"></i> Novo colaborador</div>
           <div id="colab-msg-ok" class="msg msg-ok"><i class="ti ti-circle-check"></i> <span id="colab-msg-ok-txt">Colaborador salvo!</span></div>
           <div id="colab-msg-err" class="msg msg-err"><i class="ti ti-alert-circle"></i><span id="colab-msg-err-txt"></span></div>
@@ -466,7 +481,7 @@
           <select id="mes-b" onchange="renderAnalise()"></select>
         </div>
       </div>
-      <div class="export-row">
+      <div class="export-row admin-flex">
         <button class="btn-export excel" onclick="exportarExcel()"><i class="ti ti-file-spreadsheet"></i> Exportar Excel</button>
         <button class="btn-export pdf" onclick="exportarPDF()"><i class="ti ti-file-type-pdf"></i> Exportar PDF</button>
       </div>
@@ -524,6 +539,7 @@ const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agos
 const SEMANAS=['Sem 1','Sem 2','Sem 3','Sem 4'];
 
 let allPedidos=[], allColabs=[];
+let currentPerfil=''; 
 let barInst,lineInst,groupedInst,overlapInst,pieInst;
 let unsubPedidos=null, unsubColabs=null;
 
@@ -562,6 +578,40 @@ window.buildDashMesOptions=buildDashMesOptions;
 window.buildHistMesOptions=buildHistMesOptions;
 window.buildAnaliseMesOptions=buildAnaliseMesOptions;
 
+
+async function carregarPerfil(email){
+  try {
+    // Busca na coleção 'usuarios' pelo email
+    const snap = await getDocs(query(collection(db,'usuarios')));
+    const userDoc = snap.docs.find(d => (d.data().email||'').toLowerCase() === email.toLowerCase());
+    if(userDoc){
+      return userDoc.data().perfil || 'diretoria';
+    }
+    // Se não encontrar, assume diretoria por segurança
+    return 'diretoria';
+  } catch(e){
+    console.error('Erro ao carregar perfil:',e);
+    return 'diretoria';
+  }
+}
+
+function aplicarPerfil(perfil){
+  currentPerfil = perfil;
+  document.body.classList.remove('perfil-admin','perfil-diretoria');
+  document.body.classList.add('perfil-'+perfil);
+  const badge = document.getElementById('perfil-badge');
+  if(perfil==='admin'){
+    badge.textContent='Admin';
+    badge.className='perfil-badge admin';
+  } else {
+    badge.textContent='Diretoria';
+    badge.className='perfil-badge diretoria';
+  }
+  // ajusta grid de pedidos para tela cheia quando diretoria
+  const grid=document.getElementById('pedidos-form-2col');
+  if(grid) grid.style.gridTemplateColumns = perfil==='admin' ? '1fr 1fr' : '1fr';
+}
+
 /* ── AUTH ── */
 onAuthStateChanged(auth, user=>{
   if(user){
@@ -569,6 +619,8 @@ onAuthStateChanged(auth, user=>{
     document.getElementById('app-screen').style.display='flex';
     document.getElementById('user-av').textContent=(user.email||'U').substring(0,2).toUpperCase();
     document.getElementById('user-name').textContent=user.email;
+    const perfil = await carregarPerfil(user.email);
+    aplicarPerfil(perfil);
     buildDashMesOptions();
     buildHistMesOptions();
     buildAnaliseMesOptions('a');
@@ -753,8 +805,8 @@ function renderColaboradores(){
       <td style="color:var(--text-secondary);">${c.cargo||'—'}</td>
       <td><span class="badge ${st==='ativo'?'badge-g':'badge-r'}">${st==='ativo'?'Ativo':'Inativo'}</span></td>
       <td>
-        <button class="btn-edit" onclick="window._editColab('${c.id}')" aria-label="Editar"><i class="ti ti-pencil"></i></button>
-        <button class="btn-del" onclick="window._toggleColab('${c.id}','${st}')" aria-label="Alternar status" title="${st==='ativo'?'Desativar':'Ativar'}">
+        <button class="btn-edit admin-only" onclick="window._editColab('${c.id}')" aria-label="Editar"><i class="ti ti-pencil"></i></button>
+        <button class="btn-del admin-only" onclick="window._toggleColab('${c.id}','${st}')" aria-label="Alternar status" title="${st==='ativo'?'Desativar':'Ativar'}">
           <i class="ti ti-${st==='ativo'?'user-minus':'user-check'}"></i>
         </button>
       </td>
