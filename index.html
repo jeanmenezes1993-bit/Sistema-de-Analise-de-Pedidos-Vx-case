@@ -189,6 +189,17 @@
     .colab-stat-label{font-size:11px;color:var(--text-secondary);margin-bottom:3px;}
     .colab-stat-val{font-size:20px;font-weight:600;}
 
+
+    /* EFICIÊNCIA */
+    .efic-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
+    .efic-table th{text-align:left;padding:7px 10px;font-size:11px;font-weight:600;color:var(--text-secondary);background:var(--bg-secondary);border-bottom:1px solid var(--border-md);}
+    .efic-table td{padding:7px 10px;border-bottom:1px solid var(--border);}
+    .efic-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500;}
+    .efic-ideal{background:#E1F5EE;color:#0F6E56;}
+    .efic-volume{background:#E6F1FB;color:#0C447C;}
+    .efic-rapido{background:#FAEEDA;color:#633806;}
+    .efic-atencao{background:#FCEBEB;color:#A32D2D;}
+
     /* MISC */
     .spinner{display:inline-block;width:14px;height:14px;border:2px solid #9FE1CB;border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite;}
     @keyframes spin{to{transform:rotate(360deg);}}
@@ -299,6 +310,24 @@
         <div class="card-label">Evolução semanal</div>
         <div style="position:relative;height:130px;"><canvas id="lineChart"></canvas></div>
       </div>
+
+      <!-- GRÁFICO DE EFICIÊNCIA -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-label" style="margin-bottom:4px;">
+          Mapa de eficiência por colaborador
+          <span style="font-size:10px;font-weight:400;color:var(--text-tertiary);">tempo médio × volume produzido — hover nos pontos</span>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+          <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 10px;border-radius:20px;background:#E1F5EE;color:#0F6E56;font-weight:500;">🏆 Ideal — rápido e produtivo</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 10px;border-radius:20px;background:#E6F1FB;color:#0C447C;font-weight:500;">📦 Alto volume, mais lento</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 10px;border-radius:20px;background:#FAEEDA;color:#633806;font-weight:500;">⚡ Rápido, volume menor</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 10px;border-radius:20px;background:#FCEBEB;color:#A32D2D;font-weight:500;">⚠️ Atenção — lento e baixo volume</span>
+        </div>
+        <div id="eficiencia-empty" class="empty-state" style="display:none;">Nenhum dado neste mês para calcular eficiência.</div>
+        <div style="position:relative;height:320px;"><canvas id="eficienciaChart" role="img" aria-label="Gráfico de eficiência: tempo médio vs volume por colaborador"></canvas></div>
+        <div style="margin-top:14px;" id="eficiencia-tabela"></div>
+      </div>
+
     </section>
 
     <!-- ── PEDIDOS ── -->
@@ -837,6 +866,7 @@ function renderDash(){
   const inicio=new Date(mes+'-01');
   const sems=SEMANAS.map((_,i)=>d.filter(p=>{const dt=new Date(p.data);return Math.floor((dt-inicio)/(7*24*3600*1000))===i;}).reduce((s,p)=>s+(p.qtd||0),0));
   if(lineInst)lineInst.destroy();
+  renderEficiencia(colabs);
   lineInst=new Chart(document.getElementById('lineChart'),{type:'line',data:{labels:SEMANAS,datasets:[{label:'Volume',data:sems,borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,.07)',borderWidth:2,fill:true,tension:.3,pointBackgroundColor:'#1D9E75',pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
 }
 
@@ -938,6 +968,179 @@ function exportarPDF(){
 }
 
 window.exportarExcel=exportarExcel;window.exportarPDF=exportarPDF;
+
+
+/* ── EFICIÊNCIA ── */
+let eficInst=null;
+function renderEficiencia(colabs){
+  const canvas=document.getElementById('eficienciaChart');
+  const emptyEl=document.getElementById('eficiencia-empty');
+  const tabelaEl=document.getElementById('eficiencia-tabela');
+
+  if(!colabs||!colabs.length){
+    canvas.style.display='none'; emptyEl.style.display='block'; tabelaEl.innerHTML=''; return;
+  }
+  canvas.style.display='block'; emptyEl.style.display='none';
+
+  // calcular tempo médio por pedido de cada colaborador
+  const dados=colabs.map(c=>({
+    nome:c.nome,
+    pedidos:c.pedidos,
+    qtd:c.qtd,
+    tempoMedio:c.tempos.length?Math.round(c.tempos.reduce((a,b)=>a+b,0)/c.tempos.length):0
+  })).filter(c=>c.pedidos>0&&c.tempoMedio>0);
+
+  if(!dados.length){canvas.style.display='none';emptyEl.style.display='block';tabelaEl.innerHTML='';return;}
+
+  // médias para definir quadrantes
+  const avgTempo=dados.reduce((s,c)=>s+c.tempoMedio,0)/dados.length;
+  const avgQtd  =dados.reduce((s,c)=>s+c.qtd,0)/dados.length;
+
+  // montar pontos do bubble chart
+  const allCols=[...new Set(allPedidos.map(p=>p.colab).filter(Boolean))];
+  const maxPed=Math.max(...dados.map(c=>c.pedidos));
+
+  const dataset={
+    label:'Colaboradores',
+    data:dados.map(c=>({x:c.tempoMedio, y:c.qtd, r:Math.max(8, Math.round(c.pedidos/maxPed*28))})),
+    backgroundColor:dados.map(c=>{
+      const fast=c.tempoMedio<=avgTempo, high=c.qtd>=avgQtd;
+      if(fast&&high) return 'rgba(29,158,117,0.75)';   // ideal
+      if(!fast&&high) return 'rgba(55,138,221,0.75)';  // volume alto
+      if(fast&&!high) return 'rgba(239,159,39,0.75)';  // rápido
+      return 'rgba(226,75,74,0.75)';                   // atenção
+    }),
+    borderColor:dados.map(c=>{
+      const fast=c.tempoMedio<=avgTempo, high=c.qtd>=avgQtd;
+      if(fast&&high) return '#0F6E56';
+      if(!fast&&high) return '#0C447C';
+      if(fast&&!high) return '#633806';
+      return '#A32D2D';
+    }),
+    borderWidth:2
+  };
+
+  if(eficInst)eficInst.destroy();
+  eficInst=new Chart(canvas,{
+    type:'bubble',
+    data:{datasets:[dataset]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            label:ctx=>{
+              const d=dados[ctx.dataIndex];
+              const fast=d.tempoMedio<=avgTempo, high=d.qtd>=avgQtd;
+              const quad=fast&&high?'🏆 Ideal':!fast&&high?'📦 Alto volume':fast&&!high?'⚡ Rápido':'⚠️ Atenção';
+              return[
+                ' '+d.nome,
+                ` Tempo médio: ${d.tempoMedio} min/pedido`,
+                ` Volume: ${d.qtd.toLocaleString('pt-BR')} produtos`,
+                ` Pedidos: ${d.pedidos}`,
+                ` Quadrante: ${quad}`
+              ];
+            }
+          },
+          backgroundColor:'rgba(17,24,39,0.92)',
+          titleColor:'#fff',
+          bodyColor:'rgba(255,255,255,0.85)',
+          padding:12, cornerRadius:8
+        },
+        annotation:{} // sem plugin annotation, usamos linhas via dataset extra
+      },
+      scales:{
+        x:{
+          title:{display:true,text:'Tempo médio por pedido (min) — menor = mais rápido →',font:{size:11},color:'#6B7280'},
+          grid:{color:'rgba(0,0,0,0.05)'},
+          ticks:{font:{size:11}}
+        },
+        y:{
+          title:{display:true,text:'Volume de produtos ↑',font:{size:11},color:'#6B7280'},
+          grid:{color:'rgba(0,0,0,0.05)'},
+          ticks:{font:{size:11}}
+        }
+      }
+    },
+    plugins:[{
+      id:'quadrantLines',
+      afterDraw(chart){
+        const {ctx,chartArea:{left,right,top,bottom},scales:{x,y}}=chart;
+        const cx=x.getPixelForValue(avgTempo);
+        const cy=y.getPixelForValue(avgQtd);
+        ctx.save();
+        // linhas de quadrante
+        ctx.setLineDash([6,4]);
+        ctx.strokeStyle='rgba(156,163,175,0.5)';
+        ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.moveTo(cx,top);ctx.lineTo(cx,bottom);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(left,cy);ctx.lineTo(right,cy);ctx.stroke();
+        ctx.setLineDash([]);
+        // labels dos quadrantes
+        ctx.font='600 10px -apple-system,sans-serif';
+        ctx.textAlign='center';
+        const pad=18;
+        ctx.fillStyle='rgba(15,110,86,0.55)';
+        ctx.fillText('🏆 IDEAL',(left+cx)/2,top+pad);
+        ctx.fillStyle='rgba(12,68,124,0.55)';
+        ctx.fillText('📦 ALTO VOLUME',(cx+right)/2,top+pad);
+        ctx.fillStyle='rgba(99,56,6,0.55)';
+        ctx.fillText('⚡ RÁPIDO',(left+cx)/2,bottom-8);
+        ctx.fillStyle='rgba(162,45,62,0.55)';
+        ctx.fillText('⚠️ ATENÇÃO',(cx+right)/2,bottom-8);
+        // nomes nos pontos
+        ctx.textAlign='center';
+        ctx.font='600 11px -apple-system,sans-serif';
+        chart.getDatasetMeta(0).data.forEach((pt,i)=>{
+          const d=dados[i];
+          ctx.fillStyle='#111827';
+          ctx.fillText(d.nome.split(' ')[0], pt.x, pt.y - pt.options.radius - 6);
+        });
+        ctx.restore();
+      }
+    }]
+  });
+
+  // tabela de diagnóstico
+  const sorted=[...dados].sort((a,b)=>{
+    const sa=(a.tempoMedio<=avgTempo?0:2)+(a.qtd<avgQtd?1:0);
+    const sb=(b.tempoMedio<=avgTempo?0:2)+(b.qtd<avgQtd?1:0);
+    return sa-sb;
+  });
+  tabelaEl.innerHTML=`
+    <div style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Diagnóstico individual</div>
+    <table class="efic-table">
+      <thead><tr>
+        <th>Colaborador</th><th>Pedidos</th><th>Volume</th>
+        <th>Tempo médio</th><th>Prod./hora</th><th>Quadrante</th>
+      </tr></thead>
+      <tbody>
+        ${sorted.map(c=>{
+          const fast=c.tempoMedo<=avgTempo, high=c.qtd>=avgQtd;
+          const fast2=c.tempoMedio<=avgTempo;
+          const high2=c.qtd>=avgQtd;
+          const quad=fast2&&high2
+            ?'<span class="efic-badge efic-ideal">🏆 Ideal</span>'
+            :!fast2&&high2
+            ?'<span class="efic-badge efic-volume">📦 Alto volume</span>'
+            :fast2&&!high2
+            ?'<span class="efic-badge efic-rapido">⚡ Rápido</span>'
+            :'<span class="efic-badge efic-atencao">⚠️ Atenção</span>';
+          const prodHora=c.tempoMedio>0?Math.round((c.qtd/c.pedidos)/(c.tempoMedio/60)):0;
+          return`<tr>
+            <td><strong>${c.nome}</strong></td>
+            <td>${c.pedidos}</td>
+            <td>${c.qtd.toLocaleString('pt-BR')}</td>
+            <td>${c.tempoMedio} min</td>
+            <td>${prodHora} prod/h</td>
+            <td>${quad}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
 
 /* ── NAV ── */
 window.showTab=function(tab){
