@@ -259,7 +259,7 @@
             <div class="form-group"><label class="form-label">Hora final *</label><input class="form-input" id="f-tf" type="time" step="1" onchange="validarHorarios()"></div>
           </div>
           <div id="horario-error" style="color:var(--red-text);font-size:12px;margin-bottom:10px;display:none;padding:8px 10px;background:var(--red-light);border-radius:var(--radius-sm);"><i class="ti ti-clock-x"></i> Hora final deve ser maior que a inicial.</div>
-          <button class="btn-save" id="btn-salvar" onclick="salvarPedido()"><i class="ti ti-device-floppy"></i> Salvar no Supabase</button>
+          <button class="btn-save" id="btn-salvar" onclick="salvarPedido()">Salvar</button>
           <div class="form-error" id="form-error"></div>
         </div>
         <div class="card">
@@ -414,7 +414,7 @@ let pollingInterval=null;
 
 function setDot(st){
   document.getElementById('db-dot').className='db-dot'+(st==='ok'?' ok':st==='err'?' err':'');
-  document.getElementById('db-label').textContent=st==='ok'?'Supabase online':st==='err'?'Erro de conexão':'Conectando...';
+  document.getElementById('db-label').textContent=st==='ok'?'Online':st==='err'?'Erro':'Conectando...';
 }
 function getInit(n){return(n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);}
 function durMin(ti,tf){
@@ -526,7 +526,7 @@ async function salvarPedido(){
     document.getElementById('msg-err-txt').textContent=e.message||'Erro ao salvar';
     msgErr.style.display='flex';
   }finally{
-    btn.disabled=false;btn.innerHTML='<i class="ti ti-device-floppy"></i> Salvar no Supabase';
+    btn.disabled=false;btn.innerHTML='Salvar';
   }
 }
 
