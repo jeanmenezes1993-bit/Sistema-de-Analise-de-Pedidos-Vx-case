@@ -156,6 +156,28 @@
     .dup-alert{background:var(--red-light);color:var(--red-text);border:1px solid #F09595;border-radius:var(--radius-md);padding:10px 14px;font-size:13px;margin-bottom:12px;display:none;align-items:center;gap:8px;}
 
 
+
+    /* LOGIN */
+    #login-screen{min-height:100vh;display:none;align-items:center;justify-content:center;background:linear-gradient(135deg,#0F1E2D 0%,#1A2332 50%,#0D3D2E 100%);}
+    #login-screen.active{display:flex;}
+    .login-box{background:#fff;border-radius:20px;padding:40px 44px;width:100%;max-width:400px;box-shadow:0 24px 60px rgba(0,0,0,0.25);}
+    .login-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px;}
+    .login-logo-icon{width:44px;height:44px;background:var(--green);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;}
+    .login-logo-title{font-size:15px;font-weight:700;color:#111827;}
+    .login-logo-sub{font-size:12px;color:#6B7280;}
+    .login-heading{font-size:22px;font-weight:700;color:#111827;margin-bottom:6px;}
+    .login-sub{font-size:13px;color:#6B7280;margin-bottom:28px;}
+    .login-group{margin-bottom:16px;}
+    .login-label{font-size:12px;font-weight:600;color:#6B7280;margin-bottom:6px;display:block;}
+    .login-input{width:100%;padding:11px 14px;font-size:14px;border:1.5px solid rgba(0,0,0,0.14);border-radius:8px;background:#fff;color:#111827;transition:border-color .15s,box-shadow .15s;}
+    .login-input:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(29,158,117,.12);}
+    .login-input-wrap{position:relative;}
+    .login-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#9CA3AF;font-size:16px;}
+    .login-btn{width:100%;padding:12px;margin-top:8px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s;}
+    .login-btn:hover{background:#0F6E56;} .login-btn:disabled{background:#9FE1CB;cursor:not-allowed;}
+    .login-error{background:#FCEBEB;color:#A32D2D;border:1px solid #F09595;border-radius:8px;padding:10px 14px;font-size:13px;margin-top:14px;display:none;align-items:center;gap:8px;}
+    .login-footer{margin-top:20px;text-align:center;font-size:12px;color:#9CA3AF;}
+
     /* COMPARATIVO INDIVIDUAL */
     .comp-ind-wrap{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;}
     .comp-ind-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
@@ -188,7 +210,41 @@
   </style>
 </head>
 <body>
-<div class="app">
+
+<!-- TELA DE LOGIN -->
+<div id="login-screen" class="active">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon">SAP</div>
+      <div>
+        <div class="login-logo-title">Sistema de Análise de Armazém</div>
+        <div class="login-logo-sub">Acesso restrito</div>
+      </div>
+    </div>
+    <div class="login-heading">Bem-vindo!</div>
+    <div class="login-sub">Faça login para acessar o painel.</div>
+    <div class="login-group">
+      <label class="login-label">E-mail</label>
+      <input class="login-input" id="l-email" type="email" placeholder="seu@email.com" autocomplete="username">
+    </div>
+    <div class="login-group">
+      <label class="login-label">Senha</label>
+      <div class="login-input-wrap">
+        <input class="login-input" id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')fazerLogin()">
+        <button class="login-eye" onclick="toggleSenha()" type="button"><i class="ti ti-eye" id="eye-icon"></i></button>
+      </div>
+    </div>
+    <button class="login-btn" id="login-btn" onclick="fazerLogin()">
+      <i class="ti ti-lock-open"></i> Entrar
+    </button>
+    <div class="login-error" id="login-error">
+      <i class="ti ti-alert-circle"></i><span id="login-error-txt"></span>
+    </div>
+    <div class="login-footer">Sistema de uso interno — acesso restrito</div>
+  </div>
+</div>
+
+<div class="app" id="app-screen" style="display:none;">
   <aside class="sidebar">
     <div class="sidebar-brand">
       <div class="sidebar-logo">SAP</div>
@@ -211,9 +267,9 @@
         <div class="db-label" id="db-label">Conectando...</div>
         <div class="rt-badge" id="rt-badge" style="display:none;">● ao vivo</div>
       </div>
-      <div class="user-row">
+      <div class="user-row" onclick="fazerLogout()" style="cursor:pointer;" title="Clique para sair">
         <div class="user-av">JM</div>
-        <div class="user-name">Jean Menezes</div>
+        <div class="user-name" style="flex:1;">Jean Menezes</div><i class="ti ti-logout" style="font-size:14px;color:rgba(255,255,255,0.3);"></i>
       </div>
     </div>
   </aside>
@@ -512,7 +568,8 @@ async function carregarDados(){
       sb.from('colaboradores').select('*').order('nome',{ascending:true}),
       sb.from('log_atividades').select('*').order('criado_em',{ascending:false})
     ]);
-    if(rPed.error||rCol.error)throw rPed.error||rCol.error;
+    if(rPed.error)throw new Error(rPed.error.message||rPed.error.details||JSON.stringify(rPed.error));
+    if(rCol.error)throw new Error(rCol.error.message||rCol.error.details||JSON.stringify(rCol.error));
     allPedidos=rPed.data||[];
     allColabs=rCol.data||[];
     allLogs=rLog.data||[];
@@ -529,7 +586,9 @@ async function carregarDados(){
     if(document.getElementById('hm-mes')?.value)renderHeatmap();
   }catch(e){
     setDot('err');
-    console.error('Erro Supabase:',e);
+    console.error('Erro Supabase detalhado:',e);
+    const msgErro=e?.message||e?.details||JSON.stringify(e)||'Erro desconhecido';
+    document.getElementById('hist-body').innerHTML=`<tr><td colspan="8" class="empty-state" style="color:#A32D2D;"><i class="ti ti-alert-circle"></i> Erro: ${msgErro}</td></tr>`;
   }
 }
 
@@ -596,7 +655,7 @@ async function salvarPedido(){
     msgOk.style.display='flex';setTimeout(()=>msgOk.style.display='none',4000);
     await carregarDados();
   }catch(e){
-    document.getElementById('msg-err-txt').textContent=e.message||'Erro ao salvar';
+    document.getElementById('msg-err-txt').textContent=e?.message||e?.details||e?.hint||JSON.stringify(e)||'Erro ao salvar';
     msgErr.style.display='flex';
   }finally{
     btn.disabled=false;btn.innerHTML='Salvar';
@@ -664,7 +723,7 @@ async function salvarColaborador(){
     msgOk.style.display='flex';setTimeout(()=>msgOk.style.display='none',3500);
     await carregarDados();
   }catch(e){
-    document.getElementById('colab-msg-err-txt').textContent=e.message;
+    document.getElementById('colab-msg-err-txt').textContent=e?.message||e?.details||JSON.stringify(e)||'Erro ao salvar';
     msgErr.style.display='flex';
   }finally{
     btn.disabled=false;btn.innerHTML='<i class="ti ti-device-floppy"></i> Salvar';
@@ -863,6 +922,83 @@ window.buildAnaliseMesOptions=buildAnaliseMesOptions;
 
 
 
+
+/* ── AUTH SUPABASE ── */
+async function verificarSessao(){
+  const{data:{session}}=await sb.auth.getSession();
+  if(session){
+    mostrarApp(session.user);
+  } else {
+    document.getElementById('login-screen').classList.add('active');
+    document.getElementById('app-screen').style.display='none';
+  }
+}
+
+function mostrarApp(user){
+  document.getElementById('login-screen').classList.remove('active');
+  document.getElementById('app-screen').style.display='flex';
+  const email=user?.email||'';
+  document.querySelector('.user-name').textContent=email;
+  document.querySelector('.user-av').textContent=email.substring(0,2).toUpperCase();
+  carregarDados();
+  buildDashMesOptions();
+  buildHistMesOptions();
+  buildAnaliseMesOptions('a');
+  buildAnaliseMesOptions('b');
+  buildHeatmapMes();
+}
+
+async function fazerLogin(){
+  const email=document.getElementById('l-email').value.trim();
+  const pass=document.getElementById('l-pass').value;
+  const btn=document.getElementById('login-btn');
+  const errEl=document.getElementById('login-error');
+  errEl.style.display='none';
+  if(!email||!pass){
+    document.getElementById('login-error-txt').textContent='Preencha e-mail e senha.';
+    errEl.style.display='flex';return;
+  }
+  btn.disabled=true;
+  btn.innerHTML='<div class="spinner" style="width:16px;height:16px;border-width:2px;border-color:#9FE1CB;border-top-color:#fff;"></div> Entrando...';
+  try{
+    const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
+    if(error)throw error;
+    mostrarApp(data.user);
+  }catch(e){
+    const msgs={
+      'Invalid login credentials':'E-mail ou senha incorretos.',
+      'Email not confirmed':'Confirme seu e-mail antes de entrar.',
+      'Too many requests':'Muitas tentativas. Aguarde alguns minutos.',
+    };
+    document.getElementById('login-error-txt').textContent=msgs[e.message]||e.message||'Erro ao fazer login.';
+    errEl.style.display='flex';
+  }finally{
+    btn.disabled=false;
+    btn.innerHTML='<i class="ti ti-lock-open"></i> Entrar';
+  }
+}
+
+async function fazerLogout(){
+  if(!confirm('Deseja sair do sistema?'))return;
+  await sb.auth.signOut();
+  document.getElementById('login-screen').classList.add('active');
+  document.getElementById('app-screen').style.display='none';
+  document.getElementById('l-email').value='';
+  document.getElementById('l-pass').value='';
+}
+
+function toggleSenha(){
+  const inp=document.getElementById('l-pass');
+  const ic=document.getElementById('eye-icon');
+  if(inp.type==='password'){inp.type='text';ic.className='ti ti-eye-off';}
+  else{inp.type='password';ic.className='ti ti-eye';}
+}
+
+window.fazerLogin=fazerLogin;
+window.fazerLogout=fazerLogout;
+window.toggleSenha=toggleSenha;
+
+
 /* ── COMPARATIVO INDIVIDUAL ── */
 let ciBarInst=null,ciTempoInst=null,ciRankInst=null;
 
@@ -1036,8 +1172,7 @@ window.verificarMovimento=verificarMovimento;
 
 // INICIALIZAR
 carregarTema();
-buildDashMesOptions();
-buildHeatmapMes();
+verificarSessao();
 buildHistMesOptions();
 buildAnaliseMesOptions('a');
 buildAnaliseMesOptions('b');
