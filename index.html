@@ -201,6 +201,7 @@
       <button class="nav-btn" id="tab-colaboradores" onclick="showTab('colaboradores')"><i class="ti ti-users"></i> Colaboradores</button>
       <div class="nav-section-label" style="margin-top:6px;">Relatórios</div>
       <button class="nav-btn" id="tab-analise" onclick="showTab('analise')"><i class="ti ti-chart-bar"></i> Análise</button>
+      <button class="nav-btn" id="tab-comparativo" onclick="showTab('comparativo')"><i class="ti ti-user-search"></i> Comparativo</button>
       <div class="nav-section-label" style="margin-top:6px;">Sistema</div>
       <button class="nav-btn" id="tab-log" onclick="showTab('log')"><i class="ti ti-history"></i> Log de ações</button>
     </nav>
@@ -236,37 +237,6 @@
         <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-package"></i></div><div class="kpi-label">Total de produtos</div><div class="kpi-value">—</div></div>
         <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-trophy"></i></div><div class="kpi-label">Melhor colaborador</div><div class="kpi-value">—</div></div>
         <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-bolt"></i></div><div class="kpi-label">Recorde velocidade</div><div class="kpi-value">—</div></div>
-      </div>
-
-      <!-- COMPARATIVO INDIVIDUAL -->
-      <div class="comp-ind-wrap">
-        <div class="comp-ind-header">
-          <div>
-            <div style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em;">Comparativo individual</div>
-            <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Evolução mês a mês de um colaborador</div>
-          </div>
-          <select class="comp-ind-select" id="ci-select" onchange="renderComparativoIndividual()">
-            <option value="">Selecione um colaborador...</option>
-          </select>
-        </div>
-        <div id="ci-empty" class="empty-state">Selecione um colaborador para ver o comparativo</div>
-        <div id="ci-content" style="display:none;">
-          <div class="comp-ind-kpis" id="ci-kpis"></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
-            <div>
-              <div style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Volume mensal</div>
-              <div style="position:relative;height:160px;"><canvas id="ci-bar"></canvas></div>
-            </div>
-            <div>
-              <div style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Tempo médio por pedido (min)</div>
-              <div style="position:relative;height:160px;"><canvas id="ci-tempo"></canvas></div>
-            </div>
-          </div>
-          <div>
-            <div style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Posição no ranking mensal <span style="font-size:10px;font-weight:400;">(1º = melhor)</span></div>
-            <div style="position:relative;height:120px;"><canvas id="ci-rank"></canvas></div>
-          </div>
-        </div>
       </div>
 
       <!-- HEATMAP -->
@@ -441,6 +411,35 @@
             <thead><tr><th style="width:140px;">Data/Hora</th><th style="width:160px;">Usuário</th><th style="width:100px;">Ação</th><th>Detalhe</th></tr></thead>
             <tbody id="log-body"><tr><td colspan="4" class="empty-state"><div class="spinner"></div></td></tr></tbody>
           </table>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- COMPARATIVO INDIVIDUAL -->
+    <section class="screen" id="screen-comparativo">
+      <div class="top-row">
+        <div><div class="page-title">Comparativo individual</div><div class="page-sub">Evolução mês a mês de um colaborador</div></div>
+        <select class="comp-ind-select" id="ci-select" onchange="renderComparativoIndividual()">
+          <option value="">Selecione um colaborador...</option>
+        </select>
+      </div>
+      <div id="ci-empty" class="empty-state" style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg);padding:40px;">Selecione um colaborador para ver o comparativo</div>
+      <div id="ci-content" style="display:none;">
+        <div class="comp-ind-kpis" id="ci-kpis"></div>
+        <div class="chart-row" style="margin-bottom:16px;">
+          <div class="card">
+            <div class="card-label">Volume mensal de produtos</div>
+            <div style="position:relative;height:200px;"><canvas id="ci-bar"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-label">Tempo médio por pedido (min)</div>
+            <div style="position:relative;height:200px;"><canvas id="ci-tempo"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">Posição no ranking mensal <span style="font-size:10px;font-weight:400;">(1º = melhor)</span></div>
+          <div style="position:relative;height:160px;"><canvas id="ci-rank"></canvas></div>
         </div>
       </div>
     </section>
@@ -833,12 +832,13 @@ function fecharPerfil(){document.getElementById('modal-perfil').classList.remove
 function fecharPerfilSeSobreposto(e){if(e.target===document.getElementById('modal-perfil'))fecharPerfil();}
 
 window.showTab=function(tab){
-  ['dash','pedidos','colaboradores','analise','log'].forEach(t=>{
+  ['dash','pedidos','colaboradores','analise','log','comparativo'].forEach(t=>{
     document.getElementById('screen-'+t).classList.toggle('active',t===tab);
     document.getElementById('tab-'+t).classList.toggle('active',t===tab);
   });
   if(tab==='dash')renderDash();
   if(tab==='analise')renderAnalise();
+  if(tab==='comparativo'){atualizarSelectCI();renderComparativoIndividual();}
 };
 
 window.validarHorarios=validarHorarios;
