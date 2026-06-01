@@ -155,6 +155,28 @@
     .mov-dup{color:var(--red);}
     .dup-alert{background:var(--red-light);color:var(--red-text);border:1px solid #F09595;border-radius:var(--radius-md);padding:10px 14px;font-size:13px;margin-bottom:12px;display:none;align-items:center;gap:8px;}
 
+
+    /* COMPARATIVO INDIVIDUAL */
+    .comp-ind-wrap{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;}
+    .comp-ind-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+    .comp-ind-select{font-size:14px;padding:8px 12px;border-radius:var(--radius-md);border:1px solid var(--border-md);background:var(--bg-primary);color:var(--text-primary);min-width:200px;}
+    .comp-ind-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px;}
+    .comp-ind-kpi{background:var(--bg-secondary);border-radius:var(--radius-md);padding:12px 14px;text-align:center;}
+    .comp-ind-kpi-val{font-size:20px;font-weight:700;color:var(--text-primary);}
+    .comp-ind-kpi-label{font-size:11px;color:var(--text-secondary);margin-top:3px;}
+    .comp-ind-kpi-trend{font-size:11px;font-weight:500;margin-top:2px;}
+    .trend-up{color:var(--green);} .trend-down{color:var(--red);} .trend-eq{color:var(--text-tertiary);}
+    /* HEATMAP */
+    .heatmap-wrap{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;}
+    .heatmap-grid{display:grid;grid-template-columns:48px repeat(7,1fr);gap:3px;margin-top:10px;}
+    .heatmap-cell{height:38px;border-radius:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:600;cursor:default;transition:transform .1s;position:relative;}
+    .heatmap-cell:hover{transform:scale(1.1);z-index:10;}
+    .heatmap-header{height:26px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--text-secondary);}
+    .heatmap-row-label{height:38px;display:flex;align-items:center;font-size:10px;color:var(--text-secondary);font-weight:500;}
+    .heatmap-legend{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:11px;color:var(--text-secondary);}
+    .heatmap-legend-bar{display:flex;gap:3px;}
+    .heatmap-legend-cell{width:20px;height:14px;border-radius:3px;}
+
     .rt-indicator{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--green-text);background:var(--green-light);padding:3px 9px;border-radius:8px;}
     .rt-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
     .spinner{display:inline-block;width:14px;height:14px;border:2px solid #9FE1CB;border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite;}
@@ -215,6 +237,55 @@
         <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-trophy"></i></div><div class="kpi-label">Melhor colaborador</div><div class="kpi-value">—</div></div>
         <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-bolt"></i></div><div class="kpi-label">Recorde velocidade</div><div class="kpi-value">—</div></div>
       </div>
+
+      <!-- COMPARATIVO INDIVIDUAL -->
+      <div class="comp-ind-wrap">
+        <div class="comp-ind-header">
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em;">Comparativo individual</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Evolução mês a mês de um colaborador</div>
+          </div>
+          <select class="comp-ind-select" id="ci-select" onchange="renderComparativoIndividual()">
+            <option value="">Selecione um colaborador...</option>
+          </select>
+        </div>
+        <div id="ci-empty" class="empty-state">Selecione um colaborador para ver o comparativo</div>
+        <div id="ci-content" style="display:none;">
+          <div class="comp-ind-kpis" id="ci-kpis"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+            <div>
+              <div style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Volume mensal</div>
+              <div style="position:relative;height:160px;"><canvas id="ci-bar"></canvas></div>
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Tempo médio por pedido (min)</div>
+              <div style="position:relative;height:160px;"><canvas id="ci-tempo"></canvas></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Posição no ranking mensal <span style="font-size:10px;font-weight:400;">(1º = melhor)</span></div>
+            <div style="position:relative;height:120px;"><canvas id="ci-rank"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- HEATMAP -->
+      <div class="heatmap-wrap">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em;">Heatmap de produção</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Padrões de pico e queda por dia da semana</div>
+          </div>
+          <select id="hm-mes" onchange="renderHeatmap()" style="font-size:13px;padding:6px 10px;border-radius:var(--radius-md);border:1px solid var(--border-md);background:var(--bg-primary);color:var(--text-primary);"></select>
+        </div>
+        <div id="heatmap-container"></div>
+        <div class="heatmap-legend">
+          <span>Menos</span>
+          <div class="heatmap-legend-bar" id="hm-legend"></div>
+          <span>Mais</span>
+        </div>
+      </div>
+
       <div class="podium-wrap"><div class="podium-title"><i class="ti ti-trophy" style="color:#F5C842;margin-right:6px;"></i>Pódio do mês — Top 3</div><div class="podium" id="podium-container"><div class="empty-state" style="width:100%;">Nenhum dado neste mês</div></div></div>
       <div class="mid-grid">
         <div class="card"><div class="card-label">Ranking</div><div id="ranking-list"><div class="empty-state"><div class="spinner"></div></div></div></div>
@@ -454,6 +525,9 @@ async function carregarDados(){
     renderColaboradores();
     renderLog();
     if(document.getElementById('screen-analise').classList.contains('active'))renderAnalise();
+    atualizarSelectCI();
+    buildHeatmapMes();
+    if(document.getElementById('hm-mes')?.value)renderHeatmap();
   }catch(e){
     setDot('err');
     console.error('Erro Supabase:',e);
@@ -788,6 +862,134 @@ window.buildHistMesOptions=buildHistMesOptions;
 window.buildAnaliseMesOptions=buildAnaliseMesOptions;
 
 
+
+/* ── COMPARATIVO INDIVIDUAL ── */
+let ciBarInst=null,ciTempoInst=null,ciRankInst=null;
+
+function atualizarSelectCI(){
+  const sel=document.getElementById('ci-select');
+  if(!sel)return;
+  const cur=sel.value;
+  const colabs=[...new Set(allPedidos.map(p=>p.colab).filter(Boolean))].sort();
+  sel.innerHTML='<option value="">Selecione um colaborador...</option>'+colabs.map(n=>`<option value="${n}"${n===cur?' selected':''}>${n}</option>`).join('');
+  if(cur)renderComparativoIndividual();
+}
+
+function renderComparativoIndividual(){
+  const nome=document.getElementById('ci-select').value;
+  const emptyEl=document.getElementById('ci-empty');
+  const ciContent=document.getElementById('ci-content');
+  if(!nome){emptyEl.style.display='block';ciContent.style.display='none';return;}
+  emptyEl.style.display='none';ciContent.style.display='block';
+  const pedidosColab=allPedidos.filter(p=>p.colab===nome);
+  const porMes={};
+  pedidosColab.forEach(p=>{
+    const m=(p.data||'').substring(0,7);if(!m)return;
+    if(!porMes[m])porMes[m]={qtd:0,pedidos:0,tempos:[]};
+    porMes[m].qtd+=(p.qtd||0);porMes[m].pedidos++;
+    const t=durMin(p.ti,p.tf);if(t>0)porMes[m].tempos.push(t);
+  });
+  const meses=Object.keys(porMes).sort();
+  if(!meses.length){emptyEl.textContent='Nenhum dado para este colaborador.';emptyEl.style.display='block';ciContent.style.display='none';return;}
+
+  // Ranking por mês
+  const rankPorMes={};
+  meses.forEach(m=>{
+    const todos=allPedidos.filter(p=>(p.data||'').startsWith(m));
+    const acc={};todos.forEach(p=>{if(!p.colab)return;acc[p.colab]=(acc[p.colab]||0)+(p.qtd||0);});
+    const sorted=Object.entries(acc).sort((a,b)=>b[1]-a[1]);
+    const pos=sorted.findIndex(([n])=>n===nome);
+    rankPorMes[m]=pos>=0?pos+1:sorted.length+1;
+  });
+
+  const ultMes=meses[meses.length-1];
+  const penMes=meses.length>1?meses[meses.length-2]:null;
+  const ultData=porMes[ultMes];
+  const penData=penMes?porMes[penMes]:null;
+  const totalQtd=Object.values(porMes).reduce((s,m)=>s+m.qtd,0);
+  const avgTempo=ultData.tempos.length?Math.round(ultData.tempos.reduce((a,b)=>a+b,0)/ultData.tempos.length):0;
+  const melhorMes=meses.reduce((a,b)=>porMes[a].qtd>porMes[b].qtd?a:b);
+  const trendHtml=(a,b,inv)=>{if(b===undefined||b===null)return'';const d=a-b;if(d===0)return'<span class="trend-eq">= igual</span>';const up=(d>0)!==inv;return up?`<span class="trend-up">▲ ${Math.abs(d)}</span>`:`<span class="trend-down">▼ ${Math.abs(d)}</span>`;};
+
+  document.getElementById('ci-kpis').innerHTML=[
+    {lb:'Prod. último mês',val:ultData.qtd.toLocaleString('pt-BR'),tr:trendHtml(ultData.qtd,penData?.qtd,false)},
+    {lb:'Pedidos último mês',val:ultData.pedidos,tr:trendHtml(ultData.pedidos,penData?.pedidos,false)},
+    {lb:'Tempo médio',val:avgTempo?avgTempo+' min':'—',tr:''},
+    {lb:'Total histórico',val:totalQtd.toLocaleString('pt-BR'),tr:''},
+    {lb:'Melhor mês',val:(()=>{const[y,mo]=melhorMes.split('-');return MESES[parseInt(mo)-1].slice(0,3)+'/'+y.slice(2);})(),tr:''},
+    {lb:'Ranking atual',val:rankPorMes[ultMes]?'#'+rankPorMes[ultMes]:'—',tr:penMes?trendHtml(rankPorMes[penMes],rankPorMes[ultMes],false):''},
+  ].map(k=>`<div class="comp-ind-kpi"><div class="comp-ind-kpi-val">${k.val}</div><div class="comp-ind-kpi-label">${k.lb}</div>${k.tr?'<div class="comp-ind-kpi-trend">'+k.tr+'</div>':''}</div>`).join('');
+
+  const allColsList=[...new Set(allPedidos.map(p=>p.colab).filter(Boolean))];
+  const ci2=allColsList.indexOf(nome)%6;
+  const labels=meses.map(m=>{const[y,mo]=m.split('-');return MESES[parseInt(mo)-1].slice(0,3)+'/'+y.slice(2);});
+  if(ciBarInst)ciBarInst.destroy();
+  ciBarInst=new Chart(document.getElementById('ci-bar'),{type:'bar',data:{labels,datasets:[{label:'Volume',data:meses.map(m=>porMes[m].qtd),backgroundColor:['#E6F1FB','#EEEDFE','#FAECE7','#E1F5EE','#FAEEDA','#FBEAF0'][ci2],borderColor:['#0C447C','#3C3489','#993C1D','#0F6E56','#633806','#72243E'][ci2],borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
+  if(ciTempoInst)ciTempoInst.destroy();
+  ciTempoInst=new Chart(document.getElementById('ci-tempo'),{type:'line',data:{labels,datasets:[{label:'Tempo médio',data:meses.map(m=>porMes[m].tempos.length?Math.round(porMes[m].tempos.reduce((a,b)=>a+b,0)/porMes[m].tempos.length):0),borderColor:'#378ADD',backgroundColor:'rgba(55,138,221,.07)',borderWidth:2,fill:true,tension:.3,pointRadius:3,pointBackgroundColor:'#378ADD'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
+  if(ciRankInst)ciRankInst.destroy();
+  ciRankInst=new Chart(document.getElementById('ci-rank'),{type:'line',data:{labels,datasets:[{label:'Ranking',data:meses.map(m=>rankPorMes[m]||null),borderColor:'#EF9F27',backgroundColor:'rgba(239,159,39,.07)',borderWidth:2,fill:true,tension:.3,pointRadius:4,pointBackgroundColor:'#EF9F27'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`#${ctx.parsed.y}º lugar`}}},scales:{y:{reverse:true,min:1,grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10},stepSize:1}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
+}
+
+/* ── HEATMAP ── */
+function buildHeatmapMes(){
+  const sel=document.getElementById('hm-mes');if(!sel)return;
+  const cur=sel.value||document.getElementById('filtro-mes')?.value||'';
+  const meses=[...new Set(allPedidos.map(p=>(p.data||'').substring(0,7)).filter(Boolean))].sort().reverse();
+  sel.innerHTML=meses.length
+    ?meses.map(m=>{const[y,mo]=m.split('-');return`<option value="${m}"${m===cur?' selected':''}>${MESES[parseInt(mo)-1]} ${y}</option>`;}).join('')
+    :'<option value="">Sem dados</option>';
+  if(!sel.value&&meses.length)sel.value=meses[0];
+}
+
+function renderHeatmap(){
+  const mes=document.getElementById('hm-mes')?.value;
+  const container=document.getElementById('heatmap-container');
+  if(!mes||!container){if(container)container.innerHTML='<div class="empty-state">Selecione um mês com dados</div>';return;}
+  const dados=allPedidos.filter(p=>(p.data||'').startsWith(mes));
+  if(!dados.length){container.innerHTML='<div class="empty-state">Nenhum dado neste mês</div>';return;}
+  const diasSemana=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const porDia={};
+  dados.forEach(p=>{if(!p.data)return;if(!porDia[p.data])porDia[p.data]=0;porDia[p.data]+=(p.qtd||0);});
+  const primeiroDia=new Date(mes+'-01');
+  const ultimoDia=new Date(primeiroDia.getFullYear(),primeiroDia.getMonth()+1,0);
+  const semanas=[];let semAtual=[];
+  for(let i=0;i<primeiroDia.getDay();i++)semAtual.push(null);
+  for(let d=1;d<=ultimoDia.getDate();d++){
+    semAtual.push(d);
+    if(semAtual.length===7){semanas.push([...semAtual]);semAtual=[];}
+  }
+  if(semAtual.length>0){while(semAtual.length<7)semAtual.push(null);semanas.push(semAtual);}
+  const maxVal=Math.max(...Object.values(porDia),1);
+  const cores=['#C6F6D5','#68D391','#38A169','#276749','#1A4731'];
+  function getColor(val){if(!val)return'rgba(0,0,0,0.04)';const p=val/maxVal;if(p<0.2)return cores[0];if(p<0.4)return cores[1];if(p<0.6)return cores[2];if(p<0.8)return cores[3];return cores[4];}
+  function getTextColor(val){return val&&val/maxVal>0.45?'#fff':'#374151';}
+  let html='<div class="heatmap-grid">';
+  html+='<div class="heatmap-header"></div>';
+  diasSemana.forEach(d=>html+=`<div class="heatmap-header">${d}</div>`);
+  semanas.forEach((sem,si)=>{
+    html+=`<div class="heatmap-row-label">Sem ${si+1}</div>`;
+    sem.forEach(dia=>{
+      if(dia===null){html+='<div style="height:38px;"></div>';return;}
+      const dataStr=`${mes}-${String(dia).padStart(2,'0')}`;
+      const val=porDia[dataStr]||0;
+      const bg=getColor(val);const tc=getTextColor(val);
+      html+=`<div class="heatmap-cell" style="background:${bg};color:${tc};" title="${dataStr}&#10;${val.toLocaleString('pt-BR')} produtos">
+        <span>${dia}</span>
+        ${val>0?`<span style="font-size:9px;opacity:.9;">${val>=1000?(val/1000).toFixed(1)+'k':val}</span>`:''}
+      </div>`;
+    });
+  });
+  html+='</div>';
+  container.innerHTML=html;
+  const legend=document.getElementById('hm-legend');
+  if(legend)legend.innerHTML=cores.map(c=>`<div class="heatmap-legend-cell" style="background:${c};"></div>`).join('');
+}
+
+window.renderComparativoIndividual=renderComparativoIndividual;
+window.renderHeatmap=renderHeatmap;
+
+
 // ── TEMA ESCURO ──
 function toggleTheme(){
   const isDark=document.body.classList.toggle('dark');
@@ -835,6 +1037,7 @@ window.verificarMovimento=verificarMovimento;
 // INICIALIZAR
 carregarTema();
 buildDashMesOptions();
+buildHeatmapMes();
 buildHistMesOptions();
 buildAnaliseMesOptions('a');
 buildAnaliseMesOptions('b');
