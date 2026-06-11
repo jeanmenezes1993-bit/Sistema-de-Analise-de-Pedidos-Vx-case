@@ -161,10 +161,6 @@
     #login-screen{min-height:100vh;display:none;align-items:center;justify-content:center;background:linear-gradient(135deg,#0F1E2D 0%,#1A2332 50%,#0D3D2E 100%);}
     #login-screen.active{display:flex;}
     .login-box{background:#fff;border-radius:20px;padding:40px 44px;width:100%;max-width:400px;box-shadow:0 24px 60px rgba(0,0,0,0.25);}
-    .login-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px;}
-    .login-logo-icon{width:44px;height:44px;background:var(--green);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;}
-    .login-logo-title{font-size:15px;font-weight:700;color:#111827;}
-    .login-logo-sub{font-size:12px;color:#6B7280;}
     .login-heading{font-size:22px;font-weight:700;color:#111827;margin-bottom:6px;}
     .login-sub{font-size:13px;color:#6B7280;margin-bottom:28px;}
     .login-group{margin-bottom:16px;}
@@ -214,13 +210,7 @@
 <!-- TELA DE LOGIN -->
 <div id="login-screen" class="active">
   <div class="login-box">
-    <div class="login-logo">
-      <div class="login-logo-icon">SAP</div>
-      <div>
-        <div class="login-logo-title">Sistema de Análise de Armazém</div>
-        <div class="login-logo-sub">Acesso restrito</div>
-      </div>
-    </div>
+    
     <div class="login-heading">Bem-vindo!</div>
     <div class="login-sub">Faça login para acessar o painel.</div>
     <div class="login-group">
@@ -247,7 +237,6 @@
 <div class="app" id="app-screen" style="display:none;">
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div class="sidebar-logo">SAP</div>
       <div><div class="sidebar-name">Análise de Armazém</div><div class="sidebar-sub">Sistema de Performance</div></div>
     </div>
     <nav class="nav-section">
