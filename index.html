@@ -292,7 +292,7 @@
             <div style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em;">Heatmap de produção</div>
             <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Padrões de pico e queda por dia da semana</div>
           </div>
-          <select id="hm-mes" onchange="renderHeatmap()" style="font-size:13px;padding:6px 10px;border-radius:var(--radius-md);border:1px solid var(--border-md);background:var(--bg-primary);color:var(--text-primary);"></select>
+          <div id="hm-mes-label" style="font-size:13px;font-weight:600;padding:6px 10px;border-radius:var(--radius-md);background:var(--bg-secondary);color:var(--text-secondary);"></div>
         </div>
         <div id="heatmap-container"></div>
         <div class="heatmap-legend">
@@ -528,7 +528,7 @@
         <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-trending-up" style="color:#EF9F27;"></i></div><div class="kpi-label">Motivo mais frequente</div><div class="kpi-value" id="erros-motivo-freq" style="font-size:14px;">—</div></div>
       </div>
 
-      <div style="display:grid;grid-template-columns:380px 1fr;gap:16px;margin-bottom:18px;">
+      <div style="display:grid;grid-template-columns:380px 1fr 280px;gap:16px;margin-bottom:18px;">
         <!-- FORMULÁRIO -->
         <div class="card">
           <div class="card-label"><i class="ti ti-plus"></i> Registrar erro</div>
@@ -581,6 +581,17 @@
           <div id="erros-pizza-empty" class="empty-state">Nenhum erro registrado ainda</div>
           <div style="position:relative;height:220px;"><canvas id="erros-pizza"></canvas></div>
           <div id="erros-pizza-legend" class="legend" style="margin-top:12px;"></div>
+        </div>
+
+        <!-- RANKING COLABORADORES -->
+        <div class="card">
+          <div class="card-label" style="margin-bottom:14px;">
+            Colaboradores
+            <span style="font-size:10px;font-weight:400;color:var(--text-tertiary);">por erros</span>
+          </div>
+          <div id="erros-colab-ranking" style="display:flex;flex-direction:column;gap:10px;">
+            <div class="empty-state">Nenhum erro registrado</div>
+          </div>
         </div>
       </div>
 
@@ -701,8 +712,6 @@ async function carregarDados(){
     renderLog();
     if(document.getElementById('screen-analise').classList.contains('active'))renderAnalise();
     atualizarSelectCI();
-    buildHeatmapMes();
-    if(document.getElementById('hm-mes')?.value)renderHeatmap();
   }catch(e){
     setDot('err');
     console.error('Erro Supabase detalhado:',e);
@@ -934,6 +943,8 @@ function renderDash(){
   lineInst=new Chart(document.getElementById('lineChart'),{type:'line',data:{labels:SEMANAS,datasets:[{label:'Volume',data:sems,borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,.07)',borderWidth:2,fill:true,tension:.3,pointBackgroundColor:'#1D9E75',pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
 
   renderEficiencia(colabs);
+  renderHeatmap();
+  renderErrosDashboard(mes);
 }
 
 function renderEficiencia(colabs){
@@ -1190,17 +1201,20 @@ function renderComparativoIndividual(){
 
 /* ── HEATMAP ── */
 function buildHeatmapMes(){
-  const sel=document.getElementById('hm-mes');if(!sel)return;
-  const cur=sel.value||document.getElementById('filtro-mes')?.value||'';
-  const meses=[...new Set(allPedidos.map(p=>(p.data||'').substring(0,7)).filter(Boolean))].sort().reverse();
-  sel.innerHTML=meses.length
-    ?meses.map(m=>{const[y,mo]=m.split('-');return`<option value="${m}"${m===cur?' selected':''}>${MESES[parseInt(mo)-1]} ${y}</option>`;}).join('')
-    :'<option value="">Sem dados</option>';
-  if(!sel.value&&meses.length)sel.value=meses[0];
+  atualizarHmMesLabel();
+}
+
+function atualizarHmMesLabel(){
+  const label=document.getElementById('hm-mes-label');if(!label)return;
+  const mes=document.getElementById('filtro-mes')?.value||'';
+  if(!mes){label.textContent='';return;}
+  const[y,mo]=mes.split('-');
+  label.textContent=`${MESES[parseInt(mo)-1]} ${y}`;
 }
 
 function renderHeatmap(){
-  const mes=document.getElementById('hm-mes')?.value;
+  const mes=document.getElementById('filtro-mes')?.value;
+  atualizarHmMesLabel();
   const container=document.getElementById('heatmap-container');
   if(!mes||!container){if(container)container.innerHTML='<div class="empty-state">Selecione um mês com dados</div>';return;}
   const dados=allPedidos.filter(p=>(p.data||'').startsWith(mes));
@@ -1391,6 +1405,41 @@ function renderErrosPizza(){
 
   const legend=document.getElementById('erros-pizza-legend');
   if(legend)legend.innerHTML=labels.map((l,i)=>`<div class="leg-item"><div class="leg-dot" style="background:${cores[i]};"></div>${l} (${vals[i]})</div>`).join('');
+
+  // Ranking de colaboradores na tela de erros
+  const rankingErrosEl=document.getElementById('erros-colab-ranking');
+  if(rankingErrosEl){
+    const porColab={};
+    allErros.forEach(e=>{
+      const nome=e.colab||'Desconhecido';
+      if(!porColab[nome])porColab[nome]=0;
+      porColab[nome]++;
+    });
+    const sorted=Object.entries(porColab).sort((a,b)=>b[1]-a[1]);
+    const coresR=['#E24B4A','#EF9F27','#378ADD','#7F77DD','#1D9E75'];
+    if(!sorted.length){
+      rankingErrosEl.innerHTML='<div class="empty-state">Nenhum erro registrado</div>';
+    } else {
+      const maxE=sorted[0][1];
+      rankingErrosEl.innerHTML=sorted.map(([nome,qtd],i)=>{
+        const pct=Math.round(qtd/maxE*100);
+        const cor=coresR[i%coresR.length];
+        const init=(nome||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+        return`<div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:30px;height:30px;border-radius:50%;background:${cor}22;color:${cor};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${init}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+              <span style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;">${nome.split(' ')[0]}</span>
+              <span style="font-size:12px;font-weight:700;color:${cor};flex-shrink:0;">${qtd} erro${qtd>1?'s':''}</span>
+            </div>
+            <div style="height:5px;background:rgba(0,0,0,0.07);border-radius:3px;">
+              <div style="height:5px;background:${cor};border-radius:3px;width:${pct}%;"></div>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
 }
 
 window.salvarErro=salvarErro;
@@ -1401,14 +1450,14 @@ window.renderErros=renderErros;
 
 let dashErrosPizzaInst=null;
 
-function renderErrosDashboard(){
-  const mesAtual=new Date().toISOString().substring(0,7);
-  const errosMes=allErros.filter(e=>(e.data||'').startsWith(mesAtual)).length;
+function renderErrosDashboard(mesParam){
+  const mes=mesParam||document.getElementById('filtro-mes')?.value||new Date().toISOString().substring(0,7);
+  const errosDoMes=allErros.filter(e=>(e.data||'').startsWith(mes));
   // Ranking de colaboradores com erros
   const rankingEl=document.getElementById('dash-erros-ranking');
   if(rankingEl){
     const porColab={};
-    allErros.forEach(e=>{
+    errosDoMes.forEach(e=>{
       const nome=e.colab||'Desconhecido';
       if(!porColab[nome])porColab[nome]=0;
       porColab[nome]++;
@@ -1441,7 +1490,7 @@ function renderErrosDashboard(){
   }
 
   const freq={};
-  allErros.forEach(e=>{const m=(e.motivo||'Outro').startsWith('Outro')?'Outro':e.motivo;freq[m]=(freq[m]||0)+1;});
+  errosDoMes.forEach(e=>{const m=(e.motivo||'Outro').startsWith('Outro')?'Outro':e.motivo;freq[m]=(freq[m]||0)+1;});
 
   const labels=Object.keys(freq);
   const vals=Object.values(freq);
