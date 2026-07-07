@@ -320,6 +320,28 @@
         <div style="position:relative;height:320px;"><canvas id="eficienciaChart"></canvas></div>
         <div style="margin-top:14px;" id="eficiencia-tabela"></div>
       </div>
+
+      <!-- ERROS NO DASHBOARD -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="card">
+          <div class="card-label">Erros operacionais por motivo</div>
+          <div id="dash-erros-empty" class="empty-state" style="display:none;">Nenhum erro registrado</div>
+          <div style="position:relative;height:200px;"><canvas id="dash-erros-pizza"></canvas></div>
+          <div id="dash-erros-legend" class="legend" style="margin-top:10px;"></div>
+        </div>
+        <div class="card">
+          <div class="card-label">Resumo de erros</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+            <div class="resumo-card"><div class="resumo-label">Erros este mês</div><div class="resumo-val" id="dash-erros-mes" style="color:var(--red);">—</div></div>
+            <div class="resumo-card"><div class="resumo-label">Total histórico</div><div class="resumo-val" id="dash-erros-total">—</div></div>
+          </div>
+          <div class="resumo-card" style="margin-bottom:10px;"><div class="resumo-label">Motivo mais frequente</div><div style="font-size:14px;font-weight:600;margin-top:4px;" id="dash-erros-motivo">—</div></div>
+          <button onclick="showTab('erros')" style="width:100%;padding:9px;border-radius:var(--radius-md);border:1px solid var(--border-md);background:none;cursor:pointer;font-size:13px;color:var(--text-secondary);display:flex;align-items:center;justify-content:center;gap:6px;">
+            <i class="ti ti-arrow-right"></i> Ver todos os erros
+          </button>
+        </div>
+      </div>
+
     </section>
 
     <!-- PEDIDOS -->
@@ -1248,6 +1270,7 @@ async function carregarErros(){
     renderErrosKpis();
     renderErrosPizza();
     atualizarDatalistErros();
+    renderErrosDashboard();
   }catch(e){
     console.error('Erro ao carregar erros operacionais:',e);
   }
@@ -1372,6 +1395,42 @@ function renderErrosPizza(){
 window.salvarErro=salvarErro;
 window.deletarErro=deletarErro;
 window.renderErros=renderErros;
+
+
+
+let dashErrosPizzaInst=null;
+
+function renderErrosDashboard(){
+  const mesAtual=new Date().toISOString().substring(0,7);
+  const errosMes=allErros.filter(e=>(e.data||'').startsWith(mesAtual)).length;
+  const el1=document.getElementById('dash-erros-mes');
+  const el2=document.getElementById('dash-erros-total');
+  const el3=document.getElementById('dash-erros-motivo');
+  if(el1)el1.textContent=errosMes;
+  if(el2)el2.textContent=allErros.length;
+
+  const freq={};
+  allErros.forEach(e=>{const m=(e.motivo||'Outro').startsWith('Outro')?'Outro':e.motivo;freq[m]=(freq[m]||0)+1;});
+  const mais=Object.entries(freq).sort((a,b)=>b[1]-a[1])[0];
+  if(el3)el3.textContent=mais?mais[0].split(':')[0]:'—';
+
+  const labels=Object.keys(freq);
+  const vals=Object.values(freq);
+  const emptyEl=document.getElementById('dash-erros-empty');
+  const canvas=document.getElementById('dash-erros-pizza');
+  if(!canvas)return;
+  if(!labels.length){if(emptyEl)emptyEl.style.display='block';canvas.style.display='none';return;}
+  if(emptyEl)emptyEl.style.display='none';canvas.style.display='block';
+
+  const cores=['#E24B4A','#378ADD','#EF9F27','#1D9E75','#7F77DD'];
+  if(dashErrosPizzaInst)dashErrosPizzaInst.destroy();
+  dashErrosPizzaInst=new Chart(canvas,{type:'doughnut',data:{labels,datasets:[{data:vals,backgroundColor:cores.slice(0,labels.length),borderWidth:2,borderColor:'var(--bg-primary)',hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.parsed} erro(s)`}}}}});
+
+  const legend=document.getElementById('dash-erros-legend');
+  if(legend)legend.innerHTML=labels.map((l,i)=>`<div class="leg-item"><div class="leg-dot" style="background:${cores[i]};"></div>${l} (${vals[i]})</div>`).join('');
+}
+
+window.renderErrosDashboard=renderErrosDashboard;
 
 
 window.renderComparativoIndividual=renderComparativoIndividual;
