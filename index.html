@@ -247,6 +247,7 @@
       <div class="nav-section-label" style="margin-top:6px;">Relatórios</div>
       <button class="nav-btn" id="tab-analise" onclick="showTab('analise')"><i class="ti ti-chart-bar"></i> Análise</button>
       <button class="nav-btn" id="tab-comparativo" onclick="showTab('comparativo')"><i class="ti ti-user-search"></i> Comparativo</button>
+      <button class="nav-btn" id="tab-erros" onclick="showTab('erros')"><i class="ti ti-alert-triangle"></i> Erros Operacionais</button>
       <div class="nav-section-label" style="margin-top:6px;">Sistema</div>
       <button class="nav-btn" id="tab-log" onclick="showTab('log')"><i class="ti ti-history"></i> Log de ações</button>
     </nav>
@@ -485,6 +486,112 @@
         <div class="card">
           <div class="card-label">Posição no ranking mensal <span style="font-size:10px;font-weight:400;">(1º = melhor)</span></div>
           <div style="position:relative;height:160px;"><canvas id="ci-rank"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ERROS OPERACIONAIS -->
+    <section class="screen" id="screen-erros">
+      <div class="top-row">
+        <div><div class="page-title">Erros Operacionais</div><div class="page-sub">Registro e controle de divergências no armazém</div></div>
+        <div class="rt-indicator"><div class="rt-dot"></div> Ao vivo</div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid" id="erros-kpis" style="margin-bottom:18px;">
+        <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-alert-triangle" style="color:#E24B4A;"></i></div><div class="kpi-label">Total de erros no mês</div><div class="kpi-value" id="erros-total-mes">—</div></div>
+        <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-calendar" style="color:#378ADD;"></i></div><div class="kpi-label">Total histórico</div><div class="kpi-value" id="erros-total-hist">—</div></div>
+        <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-trending-up" style="color:#EF9F27;"></i></div><div class="kpi-label">Motivo mais frequente</div><div class="kpi-value" id="erros-motivo-freq" style="font-size:14px;">—</div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:380px 1fr;gap:16px;margin-bottom:18px;">
+        <!-- FORMULÁRIO -->
+        <div class="card">
+          <div class="card-label"><i class="ti ti-plus"></i> Registrar erro</div>
+          <div id="erro-msg-ok" class="msg msg-ok"><i class="ti ti-circle-check"></i> Erro registrado!</div>
+          <div id="erro-msg-err" class="msg msg-err"><i class="ti ti-alert-circle"></i><span id="erro-msg-err-txt"></span></div>
+
+          <div class="form-group">
+            <label class="form-label">Nº do movimento *</label>
+            <input class="form-input" id="e-mov" type="text" placeholder="Ex: 10161463">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Colaborador que enviou *</label>
+            <input class="form-input" id="e-colab" type="text" placeholder="Nome do colaborador" list="erros-colab-datalist" autocomplete="off">
+            <datalist id="erros-colab-datalist"></datalist>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Data do envio *</label>
+            <input class="form-input" id="e-data" type="date">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Produto</label>
+            <input class="form-input" id="e-produto" type="text" placeholder="Código + descrição do produto">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Código de barras</label>
+            <input class="form-input" id="e-barcode" type="text" placeholder="Ex: 9697067">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Motivo do erro *</label>
+            <select class="form-input" id="e-motivo">
+              <option value="">Selecione o motivo...</option>
+              <option value="Enviado sem registro sistêmico">Enviado sem registro sistêmico</option>
+              <option value="Registro sem envio físico">Registro sem envio físico</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
+          <div class="form-group" id="e-outro-group" style="display:none;">
+            <label class="form-label">Descreva o motivo</label>
+            <input class="form-input" id="e-outro" type="text" placeholder="Descreva o erro...">
+          </div>
+          <div class="form-error" id="erro-form-error"></div>
+          <button class="btn-save" id="btn-salvar-erro" onclick="salvarErro()">
+            <i class="ti ti-device-floppy"></i> Registrar erro
+          </button>
+        </div>
+
+        <!-- GRÁFICO DE PIZZA -->
+        <div class="card">
+          <div class="card-label">Erros por motivo</div>
+          <div id="erros-pizza-empty" class="empty-state">Nenhum erro registrado ainda</div>
+          <div style="position:relative;height:220px;"><canvas id="erros-pizza"></canvas></div>
+          <div id="erros-pizza-legend" class="legend" style="margin-top:12px;"></div>
+        </div>
+      </div>
+
+      <!-- HISTÓRICO -->
+      <div class="card">
+        <div class="hist-filters">
+          <span class="hist-label">Histórico <span id="erros-hist-count" class="hist-count"></span></span>
+          <select id="erros-filtro-mes" onchange="renderErros()" style="margin-left:auto;">
+            <option value="all">Todos os meses</option>
+          </select>
+          <select id="erros-filtro-motivo" onchange="renderErros()">
+            <option value="all">Todos os motivos</option>
+            <option value="Enviado sem registro sistêmico">Sem registro sistêmico</option>
+            <option value="Registro sem envio físico">Sem envio físico</option>
+            <option value="Outro">Outro</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table class="hist-table">
+            <thead>
+              <tr>
+                <th style="width:110px;">Movimento</th>
+                <th style="width:90px;">Data</th>
+                <th style="width:140px;">Colaborador</th>
+                <th style="width:180px;">Produto</th>
+                <th style="width:110px;">Cód. Barras</th>
+                <th>Motivo</th>
+                <th style="width:50px;"></th>
+              </tr>
+            </thead>
+            <tbody id="erros-body">
+              <tr><td colspan="7" class="empty-state"><div class="spinner"></div> Carregando...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -880,13 +987,14 @@ function fecharPerfil(){document.getElementById('modal-perfil').classList.remove
 function fecharPerfilSeSobreposto(e){if(e.target===document.getElementById('modal-perfil'))fecharPerfil();}
 
 window.showTab=function(tab){
-  ['dash','pedidos','colaboradores','analise','log','comparativo'].forEach(t=>{
+  ['dash','pedidos','colaboradores','analise','log','comparativo','erros'].forEach(t=>{
     document.getElementById('screen-'+t).classList.toggle('active',t===tab);
     document.getElementById('tab-'+t).classList.toggle('active',t===tab);
   });
   if(tab==='dash')renderDash();
   if(tab==='analise')renderAnalise();
   if(tab==='comparativo'){atualizarSelectCI();renderComparativoIndividual();}
+  if(tab==='erros'){carregarErros();}
 };
 
 window.validarHorarios=validarHorarios;
@@ -930,6 +1038,7 @@ function mostrarApp(user){
   document.querySelector('.user-name').textContent=email;
   document.querySelector('.user-av').textContent=email.substring(0,2).toUpperCase();
   carregarDados();
+  carregarErros();
   buildDashMesOptions();
   buildHistMesOptions();
   buildAnaliseMesOptions('a');
@@ -1110,6 +1219,160 @@ function renderHeatmap(){
   const legend=document.getElementById('hm-legend');
   if(legend)legend.innerHTML=cores.map(c=>`<div class="heatmap-legend-cell" style="background:${c};"></div>`).join('');
 }
+
+
+/* ── ERROS OPERACIONAIS ── */
+let allErros=[];
+let errosPizzaInst=null;
+
+// Mostrar campo "Outro" quando selecionado
+document.addEventListener('change',function(e){
+  if(e.target&&e.target.id==='e-motivo'){
+    document.getElementById('e-outro-group').style.display=e.target.value==='Outro'?'block':'none';
+  }
+});
+
+function atualizarDatalistErros(){
+  const dl=document.getElementById('erros-colab-datalist');
+  if(!dl)return;
+  const ativos=allColabs.filter(c=>c.status==='ativo'||!c.status);
+  dl.innerHTML=ativos.map(c=>`<option value="${c.nome}">`).join('');
+}
+
+async function carregarErros(){
+  try{
+    const{data,error}=await sb.from('erros_operacionais').select('*').order('criado_em',{ascending:false});
+    if(error)throw error;
+    allErros=data||[];
+    renderErros();
+    renderErrosKpis();
+    renderErrosPizza();
+    atualizarDatalistErros();
+  }catch(e){
+    console.error('Erro ao carregar erros operacionais:',e);
+  }
+}
+
+async function salvarErro(){
+  const mov=document.getElementById('e-mov').value.trim();
+  const colab=document.getElementById('e-colab').value.trim();
+  const data=document.getElementById('e-data').value;
+  const produto=document.getElementById('e-produto').value.trim();
+  const barcode=document.getElementById('e-barcode').value.trim();
+  const motivo=document.getElementById('e-motivo').value;
+  const outro=document.getElementById('e-outro').value.trim();
+  const motivoFinal=motivo==='Outro'?('Outro: '+outro):motivo;
+
+  const errEl=document.getElementById('erro-form-error');
+  const msgOk=document.getElementById('erro-msg-ok');
+  const msgErr=document.getElementById('erro-msg-err');
+  errEl.style.display=msgOk.style.display=msgErr.style.display='none';
+
+  if(!mov||!colab||!data||!motivo){errEl.textContent='Preencha os campos obrigatórios.';errEl.style.display='block';return;}
+  if(motivo==='Outro'&&!outro){errEl.textContent='Descreva o motivo do erro.';errEl.style.display='block';return;}
+
+  const btn=document.getElementById('btn-salvar-erro');
+  btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:14px;height:14px;border-width:2px;"></div> Salvando...';
+
+  try{
+    const{error}=await sb.from('erros_operacionais').insert({mov,colab,data,produto,barcode,motivo:motivoFinal});
+    if(error)throw error;
+    await registrarLog('registrou erro',`Movimento ${mov} — ${colab} — ${motivoFinal}`);
+    ['e-mov','e-colab','e-data','e-produto','e-barcode'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('e-motivo').value='';
+    document.getElementById('e-outro-group').style.display='none';
+    msgOk.style.display='flex';setTimeout(()=>msgOk.style.display='none',4000);
+    await carregarErros();
+  }catch(e){
+    document.getElementById('erro-msg-err-txt').textContent=e?.message||'Erro ao salvar';
+    msgErr.style.display='flex';
+  }finally{
+    btn.disabled=false;btn.innerHTML='<i class="ti ti-device-floppy"></i> Registrar erro';
+  }
+}
+
+async function deletarErro(id){
+  if(!confirm('Excluir este registro?'))return;
+  try{
+    const{error}=await sb.from('erros_operacionais').delete().eq('id',id);
+    if(error)throw error;
+    await carregarErros();
+  }catch(e){alert('Erro: '+e.message);}
+}
+
+function renderErros(){
+  const filtroMes=document.getElementById('erros-filtro-mes')?.value||'all';
+  const filtroMotivo=document.getElementById('erros-filtro-motivo')?.value||'all';
+
+  // Popular select de meses
+  const selMes=document.getElementById('erros-filtro-mes');
+  if(selMes){
+    const meses=[...new Set(allErros.map(e=>(e.data||'').substring(0,7)).filter(Boolean))].sort().reverse();
+    const cur=selMes.value;
+    selMes.innerHTML='<option value="all">Todos os meses</option>'+meses.map(m=>{const[y,mo]=m.split('-');return`<option value="${m}"${m===cur?' selected':''}>${MESES[parseInt(mo)-1]} ${y}</option>`;}).join('');
+  }
+
+  const dados=allErros.filter(e=>{
+    if(filtroMes!=='all'&&!(e.data||'').startsWith(filtroMes))return false;
+    if(filtroMotivo!=='all'&&!(e.motivo||'').includes(filtroMotivo))return false;
+    return true;
+  });
+
+  document.getElementById('erros-hist-count').textContent=`(${dados.length} registros)`;
+  const body=document.getElementById('erros-body');
+  if(!dados.length){body.innerHTML='<tr><td colspan="7" class="empty-state">Nenhum erro encontrado</td></tr>';return;}
+
+  body.innerHTML=dados.map(e=>`<tr>
+    <td><span class="mono">${e.mov||'—'}</span></td>
+    <td>${(e.data||'').split('-').reverse().join('/')}</td>
+    <td>${e.colab||'—'}</td>
+    <td style="white-space:normal;font-size:12px;">${e.produto||'—'}</td>
+    <td class="mono">${e.barcode||'—'}</td>
+    <td><span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500;background:#FCEBEB;color:#A32D2D;">
+      <i class="ti ti-alert-triangle"></i> ${e.motivo||'—'}
+    </span></td>
+    <td><button class="btn-del" onclick="deletarErro('${e.id}')"><i class="ti ti-trash"></i></button></td>
+  </tr>`).join('');
+}
+
+function renderErrosKpis(){
+  const mesAtual=new Date().toISOString().substring(0,7);
+  const errosMes=allErros.filter(e=>(e.data||'').startsWith(mesAtual)).length;
+  document.getElementById('erros-total-mes').textContent=errosMes;
+  document.getElementById('erros-total-hist').textContent=allErros.length;
+
+  // Motivo mais frequente
+  const freq={};
+  allErros.forEach(e=>{const m=e.motivo||'Outro';freq[m]=(freq[m]||0)+1;});
+  const mais=Object.entries(freq).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('erros-motivo-freq').textContent=mais?mais[0].split(':')[0]:'—';
+}
+
+function renderErrosPizza(){
+  const freq={};
+  allErros.forEach(e=>{
+    const m=(e.motivo||'Outro').startsWith('Outro')?'Outro':e.motivo;
+    freq[m]=(freq[m]||0)+1;
+  });
+  const labels=Object.keys(freq);
+  const vals=Object.values(freq);
+  const emptyEl=document.getElementById('erros-pizza-empty');
+  const canvas=document.getElementById('erros-pizza');
+  if(!labels.length){emptyEl.style.display='block';canvas.style.display='none';return;}
+  emptyEl.style.display='none';canvas.style.display='block';
+
+  const cores=['#E24B4A','#378ADD','#EF9F27','#1D9E75','#7F77DD'];
+  if(errosPizzaInst)errosPizzaInst.destroy();
+  errosPizzaInst=new Chart(canvas,{type:'doughnut',data:{labels,datasets:[{data:vals,backgroundColor:cores.slice(0,labels.length),borderWidth:2,borderColor:'#fff',hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.parsed} erro(s)`}}}}});
+
+  const legend=document.getElementById('erros-pizza-legend');
+  if(legend)legend.innerHTML=labels.map((l,i)=>`<div class="leg-item"><div class="leg-dot" style="background:${cores[i]};"></div>${l} (${vals[i]})</div>`).join('');
+}
+
+window.salvarErro=salvarErro;
+window.deletarErro=deletarErro;
+window.renderErros=renderErros;
+
 
 window.renderComparativoIndividual=renderComparativoIndividual;
 window.renderHeatmap=renderHeatmap;
