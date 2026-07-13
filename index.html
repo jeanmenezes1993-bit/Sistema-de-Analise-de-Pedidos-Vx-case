@@ -514,20 +514,32 @@
       </div>
       <div id="ci-empty" class="empty-state" style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg);padding:40px;">Selecione um colaborador para ver o comparativo</div>
       <div id="ci-content" style="display:none;">
-        <div class="comp-ind-kpis" id="ci-kpis"></div>
-        <div class="chart-row" style="margin-bottom:16px;">
-          <div class="card">
-            <div class="card-label">Volume mensal de produtos</div>
-            <div style="position:relative;height:200px;"><canvas id="ci-bar"></canvas></div>
+        <div class="chart-row" style="align-items:start;">
+          <div class="card" id="ci-panel-a">
+            <div style="display:flex;align-items:center;gap:0;margin-bottom:16px;">
+              <div class="modal-avatar" id="cia-avatar"></div>
+              <div><div style="font-size:16px;font-weight:700;" id="cia-nome"></div><div style="font-size:12px;color:var(--text-secondary);margin-top:2px;" id="cia-cargo"></div><div style="font-size:11px;margin-top:4px;" id="cia-rank-badge"></div></div>
+            </div>
+            <div class="modal-kpi-grid" id="cia-kpis" style="grid-template-columns:repeat(2,1fr);"></div>
+            <div class="modal-section">Evolução mensal</div>
+            <div style="position:relative;height:160px;margin-bottom:16px;"><canvas id="cia-chart"></canvas></div>
+            <div class="modal-section">Histórico de pedidos</div>
+            <div style="overflow-x:auto;max-height:280px;overflow-y:auto;"><table class="hist-table"><thead><tr><th style="width:100px;">Movimento</th><th style="width:80px;">Data</th><th style="width:60px;">Qtd.</th><th style="width:70px;">T. Inicial</th><th style="width:70px;">T. Final</th><th style="width:60px;">Duração</th></tr></thead><tbody id="cia-hist"></tbody></table></div>
           </div>
-          <div class="card">
-            <div class="card-label">Tempo médio por pedido (min)</div>
-            <div style="position:relative;height:200px;"><canvas id="ci-tempo"></canvas></div>
+          <div class="card" id="ci-panel-b">
+            <div id="cib-empty" class="empty-state">Selecione o colaborador B para comparar</div>
+            <div id="cib-body" style="display:none;">
+              <div style="display:flex;align-items:center;gap:0;margin-bottom:16px;">
+                <div class="modal-avatar" id="cib-avatar"></div>
+                <div><div style="font-size:16px;font-weight:700;" id="cib-nome"></div><div style="font-size:12px;color:var(--text-secondary);margin-top:2px;" id="cib-cargo"></div><div style="font-size:11px;margin-top:4px;" id="cib-rank-badge"></div></div>
+              </div>
+              <div class="modal-kpi-grid" id="cib-kpis" style="grid-template-columns:repeat(2,1fr);"></div>
+              <div class="modal-section">Evolução mensal</div>
+              <div style="position:relative;height:160px;margin-bottom:16px;"><canvas id="cib-chart"></canvas></div>
+              <div class="modal-section">Histórico de pedidos</div>
+              <div style="overflow-x:auto;max-height:280px;overflow-y:auto;"><table class="hist-table"><thead><tr><th style="width:100px;">Movimento</th><th style="width:80px;">Data</th><th style="width:60px;">Qtd.</th><th style="width:70px;">T. Inicial</th><th style="width:70px;">T. Final</th><th style="width:60px;">Duração</th></tr></thead><tbody id="cib-hist"></tbody></table></div>
+            </div>
           </div>
-        </div>
-        <div class="card">
-          <div class="card-label">Posição no ranking mensal <span style="font-size:10px;font-weight:400;">(1º = melhor)</span></div>
-          <div style="position:relative;height:160px;"><canvas id="ci-rank"></canvas></div>
         </div>
       </div>
     </section>
@@ -1280,7 +1292,7 @@ window.toggleSenha=toggleSenha;
 
 
 /* ── COMPARATIVO INDIVIDUAL ── */
-let ciBarInst=null,ciTempoInst=null,ciRankInst=null;
+let ciaChartInst=null,cibChartInst=null;
 
 function atualizarSelectCI(){
   const selA=document.getElementById('ci-select');
@@ -1293,33 +1305,36 @@ function atualizarSelectCI(){
   if(curA)renderComparativoIndividual();
 }
 
-function calcularStatsColab(nome){
-  const pedidosColab=allPedidos.filter(p=>p.colab===nome);
-  const porMes={};
-  pedidosColab.forEach(p=>{
-    const m=(p.data||'').substring(0,7);if(!m)return;
-    if(!porMes[m])porMes[m]={qtd:0,pedidos:0,tempos:[]};
-    porMes[m].qtd+=(p.qtd||0);porMes[m].pedidos++;
-    const t=durMin(p.ti,p.tf);if(t>0)porMes[m].tempos.push(t);
-  });
-  const meses=Object.keys(porMes).sort();
-  if(!meses.length)return null;
-  const rankPorMes={};
-  meses.forEach(m=>{
-    const todos=allPedidos.filter(p=>(p.data||'').startsWith(m));
-    const acc={};todos.forEach(p=>{if(!p.colab)return;acc[p.colab]=(acc[p.colab]||0)+(p.qtd||0);});
-    const sorted=Object.entries(acc).sort((a,b)=>b[1]-a[1]);
-    const pos=sorted.findIndex(([n])=>n===nome);
-    rankPorMes[m]=pos>=0?pos+1:sorted.length+1;
-  });
-  const ultMes=meses[meses.length-1];
-  const penMes=meses.length>1?meses[meses.length-2]:null;
-  const ultData=porMes[ultMes];
-  const penData=penMes?porMes[penMes]:null;
-  const totalQtd=Object.values(porMes).reduce((s,m)=>s+m.qtd,0);
-  const avgTempo=ultData.tempos.length?Math.round(ultData.tempos.reduce((a,b)=>a+b,0)/ultData.tempos.length):0;
-  const melhorMes=meses.reduce((a,b)=>porMes[a].qtd>porMes[b].qtd?a:b);
-  return{nome,porMes,meses,rankPorMes,ultMes,penMes,ultData,penData,totalQtd,avgTempo,melhorMes};
+function dadosPerfilColab(nomeColab){
+  const pedidosColab=allPedidos.filter(p=>p.colab===nomeColab);
+  const colab=allColabs.find(c=>c.nome===nomeColab)||{nome:nomeColab,cargo:''};
+  const allCols=[...new Set(allPedidos.map(p=>p.colab).filter(Boolean))];
+  const rank=Object.values(allPedidos.reduce((m,p)=>{if(!p.colab)return m;if(!m[p.colab])m[p.colab]={nome:p.colab,qtd:0};m[p.colab].qtd+=(p.qtd||0);return m;},{})).sort((a,b)=>b.qtd-a.qtd);
+  const pos=rank.findIndex(r=>r.nome===nomeColab)+1;
+  const totPed=pedidosColab.length,totQtd=pedidosColab.reduce((s,p)=>s+(p.qtd||0),0);
+  const tempos=pedidosColab.map(p=>durMin(p.ti,p.tf)).filter(v=>v>0);
+  const avgTempo=tempos.length?Math.round(tempos.reduce((a,b)=>a+b,0)/tempos.length):0;
+  const mesesMap={};pedidosColab.forEach(p=>{const m=(p.data||'').substring(0,7);if(!mesesMap[m])mesesMap[m]=0;mesesMap[m]+=(p.qtd||0);});
+  const bestMesEntry=Object.entries(mesesMap).sort((a,b)=>b[1]-a[1])[0];
+  let ci=allCols.indexOf(nomeColab)%6;if(ci<0)ci=0;
+  return{pedidosColab,colab,pos,totPed,totQtd,avgTempo,mesesMap,bestMesEntry,ci};
+}
+
+function preencherPainelComparativo(prefix,nomeColab,chartInst){
+  const d=dadosPerfilColab(nomeColab);
+  const medals=['🥇','🥈','🥉'];
+  document.getElementById(prefix+'-avatar').style.cssText=`background:${FILL6[d.ci]};color:${STROKE6[d.ci]};`;
+  document.getElementById(prefix+'-avatar').textContent=getInit(nomeColab);
+  document.getElementById(prefix+'-nome').textContent=nomeColab;
+  document.getElementById(prefix+'-cargo').textContent=d.colab.cargo||'Colaborador';
+  document.getElementById(prefix+'-rank-badge').innerHTML=d.pos>0?`<span style="background:var(--bg-secondary);padding:2px 10px;border-radius:10px;font-size:12px;">${medals[d.pos-1]||'#'+d.pos} ${d.pos}º lugar no ranking</span>`:'';
+  document.getElementById(prefix+'-kpis').innerHTML=[{lb:'Total de pedidos',val:d.totPed,sub:'histórico'},{lb:'Total de produtos',val:d.totQtd.toLocaleString('pt-BR'),sub:'unidades'},{lb:'Tempo médio',val:d.avgTempo?d.avgTempo+' min':'—',sub:'por pedido'},{lb:'Melhor mês',val:d.bestMesEntry?d.bestMesEntry[0]:'—',sub:d.bestMesEntry?d.bestMesEntry[1].toLocaleString('pt-BR')+' prod.':''}].map(k=>`<div class="modal-kpi"><div class="modal-kpi-label">${k.lb}</div><div class="modal-kpi-val">${k.val}</div><div class="modal-kpi-sub">${k.sub}</div></div>`).join('');
+  const mesesOrdenados=Object.keys(d.mesesMap).sort();
+  if(chartInst)chartInst.destroy();
+  const novoChart=new Chart(document.getElementById(prefix+'-chart'),{type:'bar',data:{labels:mesesOrdenados.map(m=>{const[y,mo]=m.split('-');return MESES[parseInt(mo)-1]+'/'+y.slice(2);}),datasets:[{label:'Produtos',data:mesesOrdenados.map(m=>d.mesesMap[m]),backgroundColor:FILL6[d.ci],borderColor:STROKE6[d.ci],borderWidth:1,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
+  const sorted=[...d.pedidosColab].sort((a,b)=>(b.data||'').localeCompare(a.data||''));
+  document.getElementById(prefix+'-hist').innerHTML=sorted.length?sorted.map(p=>`<tr><td><span class="mono">${p.mov||'—'}</span></td><td>${(p.data||'').split('-').reverse().join('/')}</td><td><span class="badge badge-g">${(p.qtd||0).toLocaleString('pt-BR')}</span></td><td class="mono">${p.ti||'—'}</td><td class="mono">${p.tf||'—'}</td><td>${durMin(p.ti,p.tf)} min</td></tr>`).join(''):'<tr><td colspan="6" class="empty-state">Nenhum pedido</td></tr>';
+  return novoChart;
 }
 
 function renderComparativoIndividual(){
@@ -1329,64 +1344,20 @@ function renderComparativoIndividual(){
   const emptyEl=document.getElementById('ci-empty');
   const ciContent=document.getElementById('ci-content');
   if(!nomeA){emptyEl.textContent='Selecione um colaborador para ver o comparativo';emptyEl.style.display='block';ciContent.style.display='none';return;}
-
-  const statsA=calcularStatsColab(nomeA);
-  const statsB=nomeB?calcularStatsColab(nomeB):null;
-  if(!statsA){emptyEl.textContent='Nenhum dado para este colaborador.';emptyEl.style.display='block';ciContent.style.display='none';return;}
+  if(!allPedidos.some(p=>p.colab===nomeA)){emptyEl.textContent='Nenhum dado para este colaborador.';emptyEl.style.display='block';ciContent.style.display='none';return;}
   emptyEl.style.display='none';ciContent.style.display='block';
 
-  const allColsList=[...new Set(allPedidos.map(p=>p.colab).filter(Boolean))];
-  let ciA=allColsList.indexOf(nomeA)%6;if(ciA<0)ciA=0;
-  let ciB=statsB?allColsList.indexOf(nomeB)%6:null;
-  if(ciB!==null){if(ciB<0)ciB=0;if(ciB===ciA)ciB=(ciA+1)%6;}
-  const corA=STROKE6[ciA],fillA=FILL6[ciA];
-  const corB=statsB?STROKE6[ciB]:null,fillB=statsB?FILL6[ciB]:null;
+  ciaChartInst=preencherPainelComparativo('cia',nomeA,ciaChartInst);
 
-  const trendHtml=(a,b,inv)=>{if(b===undefined||b===null)return'';const d=a-b;if(d===0)return'<span class="trend-eq">= igual</span>';const up=(d>0)!==inv;return up?`<span class="trend-up">▲ ${Math.abs(d)}</span>`:`<span class="trend-down">▼ ${Math.abs(d)}</span>`;};
-  const fmtMes=m=>{const[y,mo]=m.split('-');return MESES[parseInt(mo)-1].slice(0,3)+'/'+y.slice(2);};
-
-  if(!statsB){
-    document.getElementById('ci-kpis').innerHTML=[
-      {lb:'Prod. último mês',val:statsA.ultData.qtd.toLocaleString('pt-BR'),tr:trendHtml(statsA.ultData.qtd,statsA.penData?.qtd,false)},
-      {lb:'Pedidos último mês',val:statsA.ultData.pedidos,tr:trendHtml(statsA.ultData.pedidos,statsA.penData?.pedidos,false)},
-      {lb:'Tempo médio',val:statsA.avgTempo?statsA.avgTempo+' min':'—',tr:''},
-      {lb:'Total histórico',val:statsA.totalQtd.toLocaleString('pt-BR'),tr:''},
-      {lb:'Melhor mês',val:fmtMes(statsA.melhorMes),tr:''},
-      {lb:'Ranking atual',val:statsA.rankPorMes[statsA.ultMes]?'#'+statsA.rankPorMes[statsA.ultMes]:'—',tr:statsA.penMes?trendHtml(statsA.rankPorMes[statsA.penMes],statsA.rankPorMes[statsA.ultMes],false):''},
-    ].map(k=>`<div class="comp-ind-kpi"><div class="comp-ind-kpi-val">${k.val}</div><div class="comp-ind-kpi-label">${k.lb}</div>${k.tr?'<div class="comp-ind-kpi-trend">'+k.tr+'</div>':''}</div>`).join('');
+  const emptyB=document.getElementById('cib-empty');
+  const bodyB=document.getElementById('cib-body');
+  if(!nomeB||!allPedidos.some(p=>p.colab===nomeB)){
+    emptyB.style.display='block';bodyB.style.display='none';
+    if(cibChartInst){cibChartInst.destroy();cibChartInst=null;}
   }else{
-    const linha=(lb,valA,valB)=>`<div class="comp-ind-kpi-two"><div class="comp-ind-kpi-two-label">${lb}</div>
-      <div class="comp-ind-kpi-two-row"><span class="comp-ind-kpi-two-name"><span class="dot" style="background:${corA};"></span>${nomeA.split(' ')[0]}</span><span style="color:${corA};">${valA}</span></div>
-      <div class="comp-ind-kpi-two-row"><span class="comp-ind-kpi-two-name"><span class="dot" style="background:${corB};"></span>${nomeB.split(' ')[0]}</span><span style="color:${corB};">${valB}</span></div>
-    </div>`;
-    document.getElementById('ci-kpis').innerHTML=[
-      linha('Prod. último mês',statsA.ultData.qtd.toLocaleString('pt-BR'),statsB.ultData.qtd.toLocaleString('pt-BR')),
-      linha('Pedidos último mês',statsA.ultData.pedidos,statsB.ultData.pedidos),
-      linha('Tempo médio',statsA.avgTempo?statsA.avgTempo+' min':'—',statsB.avgTempo?statsB.avgTempo+' min':'—'),
-      linha('Total histórico',statsA.totalQtd.toLocaleString('pt-BR'),statsB.totalQtd.toLocaleString('pt-BR')),
-      linha('Melhor mês',fmtMes(statsA.melhorMes),fmtMes(statsB.melhorMes)),
-      linha('Ranking atual',statsA.rankPorMes[statsA.ultMes]?'#'+statsA.rankPorMes[statsA.ultMes]:'—',statsB.rankPorMes[statsB.ultMes]?'#'+statsB.rankPorMes[statsB.ultMes]:'—'),
-    ].join('');
+    emptyB.style.display='none';bodyB.style.display='block';
+    cibChartInst=preencherPainelComparativo('cib',nomeB,cibChartInst);
   }
-
-  const meses=[...new Set([...statsA.meses,...(statsB?statsB.meses:[])])].sort();
-  const labels=meses.map(fmtMes);
-  const tempoMedioMes=(st,m)=>st.porMes[m]&&st.porMes[m].tempos.length?Math.round(st.porMes[m].tempos.reduce((a,b)=>a+b,0)/st.porMes[m].tempos.length):null;
-
-  if(ciBarInst)ciBarInst.destroy();
-  const datasetsBar=[{label:nomeA,data:meses.map(m=>statsA.porMes[m]?statsA.porMes[m].qtd:null),backgroundColor:fillA,borderColor:corA,borderWidth:1,borderRadius:4}];
-  if(statsB)datasetsBar.push({label:nomeB,data:meses.map(m=>statsB.porMes[m]?statsB.porMes[m].qtd:null),backgroundColor:fillB,borderColor:corB,borderWidth:1,borderRadius:4});
-  ciBarInst=new Chart(document.getElementById('ci-bar'),{type:'bar',data:{labels,datasets:datasetsBar},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:!!statsB,position:'bottom',labels:{boxWidth:10,font:{size:10}}}},scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
-
-  if(ciTempoInst)ciTempoInst.destroy();
-  const datasetsTempo=[{label:nomeA,data:meses.map(m=>tempoMedioMes(statsA,m)),borderColor:corA,backgroundColor:fillA,borderWidth:2,fill:!statsB,tension:.3,pointRadius:3,pointBackgroundColor:corA}];
-  if(statsB)datasetsTempo.push({label:nomeB,data:meses.map(m=>tempoMedioMes(statsB,m)),borderColor:corB,backgroundColor:fillB,borderWidth:2,fill:false,tension:.3,pointRadius:3,pointBackgroundColor:corB});
-  ciTempoInst=new Chart(document.getElementById('ci-tempo'),{type:'line',data:{labels,datasets:datasetsTempo},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:!!statsB,position:'bottom',labels:{boxWidth:10,font:{size:10}}}},scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
-
-  if(ciRankInst)ciRankInst.destroy();
-  const datasetsRank=[{label:nomeA,data:meses.map(m=>statsA.rankPorMes[m]||null),borderColor:corA,backgroundColor:fillA,borderWidth:2,fill:!statsB,tension:.3,pointRadius:4,pointBackgroundColor:corA}];
-  if(statsB)datasetsRank.push({label:nomeB,data:meses.map(m=>statsB.rankPorMes[m]||null),borderColor:corB,backgroundColor:fillB,borderWidth:2,fill:false,tension:.3,pointRadius:4,pointBackgroundColor:corB});
-  ciRankInst=new Chart(document.getElementById('ci-rank'),{type:'line',data:{labels,datasets:datasetsRank},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:!!statsB,position:'bottom',labels:{boxWidth:10,font:{size:10}}},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: #${ctx.parsed.y}º lugar`}}},scales:{y:{reverse:true,min:1,grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10},stepSize:1}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
 }
 
 /* ── HEATMAP ── */
