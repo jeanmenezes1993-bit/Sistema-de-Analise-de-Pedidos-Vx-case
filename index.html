@@ -184,6 +184,11 @@
     .comp-ind-kpi-label{font-size:11px;color:var(--text-secondary);margin-top:3px;}
     .comp-ind-kpi-trend{font-size:11px;font-weight:500;margin-top:2px;}
     .trend-up{color:var(--green);} .trend-down{color:var(--red);} .trend-eq{color:var(--text-tertiary);}
+    .comp-ind-kpi-two{background:var(--bg-secondary);border-radius:var(--radius-md);padding:12px 14px;}
+    .comp-ind-kpi-two-label{font-size:11px;color:var(--text-secondary);margin-bottom:8px;text-align:center;}
+    .comp-ind-kpi-two-row{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:700;padding:4px 0;}
+    .comp-ind-kpi-two-row .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;flex-shrink:0;}
+    .comp-ind-kpi-two-name{display:flex;align-items:center;font-size:11px;font-weight:500;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:90px;}
     /* HEATMAP */
     .heatmap-wrap{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;}
     .heatmap-grid{display:grid;grid-template-columns:48px repeat(7,1fr);gap:3px;margin-top:10px;}
@@ -496,10 +501,16 @@
     <!-- COMPARATIVO INDIVIDUAL -->
     <section class="screen" id="screen-comparativo">
       <div class="top-row">
-        <div><div class="page-title">Comparativo individual</div><div class="page-sub">Evolução mês a mês de um colaborador</div></div>
-        <select class="comp-ind-select" id="ci-select" onchange="renderComparativoIndividual()">
-          <option value="">Selecione um colaborador...</option>
-        </select>
+        <div><div class="page-title">Comparativo individual</div><div class="page-sub">Compare a evolução de dois colaboradores</div></div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <select class="comp-ind-select" id="ci-select" onchange="renderComparativoIndividual()">
+            <option value="">Colaborador A...</option>
+          </select>
+          <span style="font-size:12px;color:var(--text-tertiary);font-weight:600;">vs</span>
+          <select class="comp-ind-select" id="ci-select-b" onchange="renderComparativoIndividual()">
+            <option value="">Colaborador B (opcional)...</option>
+          </select>
+        </div>
       </div>
       <div id="ci-empty" class="empty-state" style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg);padding:40px;">Selecione um colaborador para ver o comparativo</div>
       <div id="ci-content" style="display:none;">
@@ -1272,20 +1283,17 @@ window.toggleSenha=toggleSenha;
 let ciBarInst=null,ciTempoInst=null,ciRankInst=null;
 
 function atualizarSelectCI(){
-  const sel=document.getElementById('ci-select');
-  if(!sel)return;
-  const cur=sel.value;
+  const selA=document.getElementById('ci-select');
+  const selB=document.getElementById('ci-select-b');
+  if(!selA||!selB)return;
+  const curA=selA.value,curB=selB.value;
   const colabs=[...new Set(allPedidos.map(p=>p.colab).filter(Boolean))].sort();
-  sel.innerHTML='<option value="">Selecione um colaborador...</option>'+colabs.map(n=>`<option value="${n}"${n===cur?' selected':''}>${n}</option>`).join('');
-  if(cur)renderComparativoIndividual();
+  selA.innerHTML='<option value="">Colaborador A...</option>'+colabs.map(n=>`<option value="${n}"${n===curA?' selected':''}>${n}</option>`).join('');
+  selB.innerHTML='<option value="">Colaborador B (opcional)...</option>'+colabs.map(n=>`<option value="${n}"${n===curB?' selected':''}>${n}</option>`).join('');
+  if(curA)renderComparativoIndividual();
 }
 
-function renderComparativoIndividual(){
-  const nome=document.getElementById('ci-select').value;
-  const emptyEl=document.getElementById('ci-empty');
-  const ciContent=document.getElementById('ci-content');
-  if(!nome){emptyEl.style.display='block';ciContent.style.display='none';return;}
-  emptyEl.style.display='none';ciContent.style.display='block';
+function calcularStatsColab(nome){
   const pedidosColab=allPedidos.filter(p=>p.colab===nome);
   const porMes={};
   pedidosColab.forEach(p=>{
@@ -1295,9 +1303,7 @@ function renderComparativoIndividual(){
     const t=durMin(p.ti,p.tf);if(t>0)porMes[m].tempos.push(t);
   });
   const meses=Object.keys(porMes).sort();
-  if(!meses.length){emptyEl.textContent='Nenhum dado para este colaborador.';emptyEl.style.display='block';ciContent.style.display='none';return;}
-
-  // Ranking por mês
+  if(!meses.length)return null;
   const rankPorMes={};
   meses.forEach(m=>{
     const todos=allPedidos.filter(p=>(p.data||'').startsWith(m));
@@ -1306,7 +1312,6 @@ function renderComparativoIndividual(){
     const pos=sorted.findIndex(([n])=>n===nome);
     rankPorMes[m]=pos>=0?pos+1:sorted.length+1;
   });
-
   const ultMes=meses[meses.length-1];
   const penMes=meses.length>1?meses[meses.length-2]:null;
   const ultData=porMes[ultMes];
@@ -1314,26 +1319,74 @@ function renderComparativoIndividual(){
   const totalQtd=Object.values(porMes).reduce((s,m)=>s+m.qtd,0);
   const avgTempo=ultData.tempos.length?Math.round(ultData.tempos.reduce((a,b)=>a+b,0)/ultData.tempos.length):0;
   const melhorMes=meses.reduce((a,b)=>porMes[a].qtd>porMes[b].qtd?a:b);
-  const trendHtml=(a,b,inv)=>{if(b===undefined||b===null)return'';const d=a-b;if(d===0)return'<span class="trend-eq">= igual</span>';const up=(d>0)!==inv;return up?`<span class="trend-up">▲ ${Math.abs(d)}</span>`:`<span class="trend-down">▼ ${Math.abs(d)}</span>`;};
+  return{nome,porMes,meses,rankPorMes,ultMes,penMes,ultData,penData,totalQtd,avgTempo,melhorMes};
+}
 
-  document.getElementById('ci-kpis').innerHTML=[
-    {lb:'Prod. último mês',val:ultData.qtd.toLocaleString('pt-BR'),tr:trendHtml(ultData.qtd,penData?.qtd,false)},
-    {lb:'Pedidos último mês',val:ultData.pedidos,tr:trendHtml(ultData.pedidos,penData?.pedidos,false)},
-    {lb:'Tempo médio',val:avgTempo?avgTempo+' min':'—',tr:''},
-    {lb:'Total histórico',val:totalQtd.toLocaleString('pt-BR'),tr:''},
-    {lb:'Melhor mês',val:(()=>{const[y,mo]=melhorMes.split('-');return MESES[parseInt(mo)-1].slice(0,3)+'/'+y.slice(2);})(),tr:''},
-    {lb:'Ranking atual',val:rankPorMes[ultMes]?'#'+rankPorMes[ultMes]:'—',tr:penMes?trendHtml(rankPorMes[penMes],rankPorMes[ultMes],false):''},
-  ].map(k=>`<div class="comp-ind-kpi"><div class="comp-ind-kpi-val">${k.val}</div><div class="comp-ind-kpi-label">${k.lb}</div>${k.tr?'<div class="comp-ind-kpi-trend">'+k.tr+'</div>':''}</div>`).join('');
+function renderComparativoIndividual(){
+  const nomeA=document.getElementById('ci-select').value;
+  const nomeBraw=document.getElementById('ci-select-b').value;
+  const nomeB=(nomeBraw&&nomeBraw!==nomeA)?nomeBraw:'';
+  const emptyEl=document.getElementById('ci-empty');
+  const ciContent=document.getElementById('ci-content');
+  if(!nomeA){emptyEl.textContent='Selecione um colaborador para ver o comparativo';emptyEl.style.display='block';ciContent.style.display='none';return;}
+
+  const statsA=calcularStatsColab(nomeA);
+  const statsB=nomeB?calcularStatsColab(nomeB):null;
+  if(!statsA){emptyEl.textContent='Nenhum dado para este colaborador.';emptyEl.style.display='block';ciContent.style.display='none';return;}
+  emptyEl.style.display='none';ciContent.style.display='block';
 
   const allColsList=[...new Set(allPedidos.map(p=>p.colab).filter(Boolean))];
-  const ci2=allColsList.indexOf(nome)%6;
-  const labels=meses.map(m=>{const[y,mo]=m.split('-');return MESES[parseInt(mo)-1].slice(0,3)+'/'+y.slice(2);});
+  let ciA=allColsList.indexOf(nomeA)%6;if(ciA<0)ciA=0;
+  let ciB=statsB?allColsList.indexOf(nomeB)%6:null;
+  if(ciB!==null){if(ciB<0)ciB=0;if(ciB===ciA)ciB=(ciA+1)%6;}
+  const corA=STROKE6[ciA],fillA=FILL6[ciA];
+  const corB=statsB?STROKE6[ciB]:null,fillB=statsB?FILL6[ciB]:null;
+
+  const trendHtml=(a,b,inv)=>{if(b===undefined||b===null)return'';const d=a-b;if(d===0)return'<span class="trend-eq">= igual</span>';const up=(d>0)!==inv;return up?`<span class="trend-up">▲ ${Math.abs(d)}</span>`:`<span class="trend-down">▼ ${Math.abs(d)}</span>`;};
+  const fmtMes=m=>{const[y,mo]=m.split('-');return MESES[parseInt(mo)-1].slice(0,3)+'/'+y.slice(2);};
+
+  if(!statsB){
+    document.getElementById('ci-kpis').innerHTML=[
+      {lb:'Prod. último mês',val:statsA.ultData.qtd.toLocaleString('pt-BR'),tr:trendHtml(statsA.ultData.qtd,statsA.penData?.qtd,false)},
+      {lb:'Pedidos último mês',val:statsA.ultData.pedidos,tr:trendHtml(statsA.ultData.pedidos,statsA.penData?.pedidos,false)},
+      {lb:'Tempo médio',val:statsA.avgTempo?statsA.avgTempo+' min':'—',tr:''},
+      {lb:'Total histórico',val:statsA.totalQtd.toLocaleString('pt-BR'),tr:''},
+      {lb:'Melhor mês',val:fmtMes(statsA.melhorMes),tr:''},
+      {lb:'Ranking atual',val:statsA.rankPorMes[statsA.ultMes]?'#'+statsA.rankPorMes[statsA.ultMes]:'—',tr:statsA.penMes?trendHtml(statsA.rankPorMes[statsA.penMes],statsA.rankPorMes[statsA.ultMes],false):''},
+    ].map(k=>`<div class="comp-ind-kpi"><div class="comp-ind-kpi-val">${k.val}</div><div class="comp-ind-kpi-label">${k.lb}</div>${k.tr?'<div class="comp-ind-kpi-trend">'+k.tr+'</div>':''}</div>`).join('');
+  }else{
+    const linha=(lb,valA,valB)=>`<div class="comp-ind-kpi-two"><div class="comp-ind-kpi-two-label">${lb}</div>
+      <div class="comp-ind-kpi-two-row"><span class="comp-ind-kpi-two-name"><span class="dot" style="background:${corA};"></span>${nomeA.split(' ')[0]}</span><span style="color:${corA};">${valA}</span></div>
+      <div class="comp-ind-kpi-two-row"><span class="comp-ind-kpi-two-name"><span class="dot" style="background:${corB};"></span>${nomeB.split(' ')[0]}</span><span style="color:${corB};">${valB}</span></div>
+    </div>`;
+    document.getElementById('ci-kpis').innerHTML=[
+      linha('Prod. último mês',statsA.ultData.qtd.toLocaleString('pt-BR'),statsB.ultData.qtd.toLocaleString('pt-BR')),
+      linha('Pedidos último mês',statsA.ultData.pedidos,statsB.ultData.pedidos),
+      linha('Tempo médio',statsA.avgTempo?statsA.avgTempo+' min':'—',statsB.avgTempo?statsB.avgTempo+' min':'—'),
+      linha('Total histórico',statsA.totalQtd.toLocaleString('pt-BR'),statsB.totalQtd.toLocaleString('pt-BR')),
+      linha('Melhor mês',fmtMes(statsA.melhorMes),fmtMes(statsB.melhorMes)),
+      linha('Ranking atual',statsA.rankPorMes[statsA.ultMes]?'#'+statsA.rankPorMes[statsA.ultMes]:'—',statsB.rankPorMes[statsB.ultMes]?'#'+statsB.rankPorMes[statsB.ultMes]:'—'),
+    ].join('');
+  }
+
+  const meses=[...new Set([...statsA.meses,...(statsB?statsB.meses:[])])].sort();
+  const labels=meses.map(fmtMes);
+  const tempoMedioMes=(st,m)=>st.porMes[m]&&st.porMes[m].tempos.length?Math.round(st.porMes[m].tempos.reduce((a,b)=>a+b,0)/st.porMes[m].tempos.length):null;
+
   if(ciBarInst)ciBarInst.destroy();
-  ciBarInst=new Chart(document.getElementById('ci-bar'),{type:'bar',data:{labels,datasets:[{label:'Volume',data:meses.map(m=>porMes[m].qtd),backgroundColor:['#E6F1FB','#EEEDFE','#FAECE7','#E1F5EE','#FAEEDA','#FBEAF0'][ci2],borderColor:['#0C447C','#3C3489','#993C1D','#0F6E56','#633806','#72243E'][ci2],borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
+  const datasetsBar=[{label:nomeA,data:meses.map(m=>statsA.porMes[m]?statsA.porMes[m].qtd:null),backgroundColor:fillA,borderColor:corA,borderWidth:1,borderRadius:4}];
+  if(statsB)datasetsBar.push({label:nomeB,data:meses.map(m=>statsB.porMes[m]?statsB.porMes[m].qtd:null),backgroundColor:fillB,borderColor:corB,borderWidth:1,borderRadius:4});
+  ciBarInst=new Chart(document.getElementById('ci-bar'),{type:'bar',data:{labels,datasets:datasetsBar},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:!!statsB,position:'bottom',labels:{boxWidth:10,font:{size:10}}}},scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
+
   if(ciTempoInst)ciTempoInst.destroy();
-  ciTempoInst=new Chart(document.getElementById('ci-tempo'),{type:'line',data:{labels,datasets:[{label:'Tempo médio',data:meses.map(m=>porMes[m].tempos.length?Math.round(porMes[m].tempos.reduce((a,b)=>a+b,0)/porMes[m].tempos.length):0),borderColor:'#378ADD',backgroundColor:'rgba(55,138,221,.07)',borderWidth:2,fill:true,tension:.3,pointRadius:3,pointBackgroundColor:'#378ADD'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
+  const datasetsTempo=[{label:nomeA,data:meses.map(m=>tempoMedioMes(statsA,m)),borderColor:corA,backgroundColor:fillA,borderWidth:2,fill:!statsB,tension:.3,pointRadius:3,pointBackgroundColor:corA}];
+  if(statsB)datasetsTempo.push({label:nomeB,data:meses.map(m=>tempoMedioMes(statsB,m)),borderColor:corB,backgroundColor:fillB,borderWidth:2,fill:false,tension:.3,pointRadius:3,pointBackgroundColor:corB});
+  ciTempoInst=new Chart(document.getElementById('ci-tempo'),{type:'line',data:{labels,datasets:datasetsTempo},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:!!statsB,position:'bottom',labels:{boxWidth:10,font:{size:10}}}},scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
+
   if(ciRankInst)ciRankInst.destroy();
-  ciRankInst=new Chart(document.getElementById('ci-rank'),{type:'line',data:{labels,datasets:[{label:'Ranking',data:meses.map(m=>rankPorMes[m]||null),borderColor:'#EF9F27',backgroundColor:'rgba(239,159,39,.07)',borderWidth:2,fill:true,tension:.3,pointRadius:4,pointBackgroundColor:'#EF9F27'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`#${ctx.parsed.y}º lugar`}}},scales:{y:{reverse:true,min:1,grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10},stepSize:1}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
+  const datasetsRank=[{label:nomeA,data:meses.map(m=>statsA.rankPorMes[m]||null),borderColor:corA,backgroundColor:fillA,borderWidth:2,fill:!statsB,tension:.3,pointRadius:4,pointBackgroundColor:corA}];
+  if(statsB)datasetsRank.push({label:nomeB,data:meses.map(m=>statsB.rankPorMes[m]||null),borderColor:corB,backgroundColor:fillB,borderWidth:2,fill:false,tension:.3,pointRadius:4,pointBackgroundColor:corB});
+  ciRankInst=new Chart(document.getElementById('ci-rank'),{type:'line',data:{labels,datasets:datasetsRank},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:!!statsB,position:'bottom',labels:{boxWidth:10,font:{size:10}}},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: #${ctx.parsed.y}º lugar`}}},scales:{y:{reverse:true,min:1,grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10},stepSize:1}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
 }
 
 /* ── HEATMAP ── */
