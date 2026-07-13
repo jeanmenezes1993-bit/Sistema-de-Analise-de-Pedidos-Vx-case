@@ -240,15 +240,17 @@
       <div><div class="sidebar-name">Análise de Armazém</div><div class="sidebar-sub">Sistema de Performance</div></div>
     </div>
     <nav class="nav-section">
-      <div class="nav-section-label">Principal</div>
+      <div class="nav-section-label" id="nav-label-principal">Principal</div>
       <button class="nav-btn active" id="tab-dash" onclick="showTab('dash')"><i class="ti ti-home"></i> Dashboard</button>
       <button class="nav-btn" id="tab-pedidos" onclick="showTab('pedidos')"><i class="ti ti-clipboard-list"></i> Pedidos</button>
       <button class="nav-btn" id="tab-colaboradores" onclick="showTab('colaboradores')"><i class="ti ti-users"></i> Colaboradores</button>
-      <div class="nav-section-label" style="margin-top:6px;">Relatórios</div>
+      <div class="nav-section-label" style="margin-top:6px;" id="nav-label-relatorios">Relatórios</div>
       <button class="nav-btn" id="tab-analise" onclick="showTab('analise')"><i class="ti ti-chart-bar"></i> Análise</button>
       <button class="nav-btn" id="tab-comparativo" onclick="showTab('comparativo')"><i class="ti ti-user-search"></i> Comparativo</button>
       <button class="nav-btn" id="tab-erros" onclick="showTab('erros')"><i class="ti ti-alert-triangle"></i> Erros Operacionais</button>
-      <div class="nav-section-label" style="margin-top:6px;">Sistema</div>
+      <div class="nav-section-label" style="margin-top:6px;" id="nav-label-operacao">Operação</div>
+      <button class="nav-btn" id="tab-direcionamento" onclick="showTab('direcionamento')"><i class="ti ti-route"></i> Direcionamento</button>
+      <div class="nav-section-label" style="margin-top:6px;" id="nav-label-sistema">Sistema</div>
       <button class="nav-btn" id="tab-log" onclick="showTab('log')"><i class="ti ti-history"></i> Log de ações</button>
     </nav>
     <div class="sidebar-footer">
@@ -577,7 +579,10 @@
 
         <!-- GRÁFICO DE PIZZA -->
         <div class="card">
-          <div class="card-label">Erros por motivo</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+            <div class="card-label" style="margin:0;">Erros por motivo</div>
+            <div id="erros-pizza-taxa" style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--bg-secondary);color:var(--text-secondary);white-space:nowrap;"></div>
+          </div>
           <div id="erros-pizza-empty" class="empty-state">Nenhum erro registrado ainda</div>
           <div style="position:relative;height:220px;"><canvas id="erros-pizza"></canvas></div>
           <div id="erros-pizza-legend" class="legend" style="margin-top:12px;"></div>
@@ -630,6 +635,86 @@
       </div>
     </section>
 
+    <!-- DIRECIONAMENTO DE PEDIDOS -->
+    <section class="screen" id="screen-direcionamento">
+      <div class="top-row">
+        <div><div class="page-title">Direcionamento de Pedidos</div><div class="page-sub">Distribua os pedidos da manhã entre os colaboradores</div></div>
+        <div class="rt-indicator"><div class="rt-dot"></div> Ao vivo</div>
+      </div>
+
+      <div class="kpi-grid" id="direc-kpis" style="margin-bottom:18px;">
+        <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-clipboard-list" style="color:#378ADD;"></i></div><div class="kpi-label">Pedidos direcionados</div><div class="kpi-value" id="direc-total-pedidos">—</div></div>
+        <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-package" style="color:#1D9E75;"></i></div><div class="kpi-label">Produtos direcionados</div><div class="kpi-value" id="direc-total-produtos">—</div></div>
+        <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-scale" style="color:#EF9F27;"></i></div><div class="kpi-label">Média por colaborador</div><div class="kpi-value" id="direc-media">—</div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:340px 1fr;gap:16px;margin-bottom:18px;">
+        <!-- FORMULÁRIO -->
+        <div class="card">
+          <div class="card-label"><i class="ti ti-plus"></i> Direcionar pedido</div>
+          <div id="direc-msg-ok" class="msg msg-ok"><i class="ti ti-circle-check"></i> Pedido direcionado!</div>
+          <div id="direc-msg-err" class="msg msg-err"><i class="ti ti-alert-circle"></i><span id="direc-msg-err-txt"></span></div>
+
+          <div class="form-group">
+            <label class="form-label">Data *</label>
+            <input class="form-input" id="direc-data-input" type="date">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Colaborador *</label>
+            <select class="form-input" id="direc-colab">
+              <option value="">Selecione o colaborador...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nº do pedido</label>
+            <input class="form-input" id="direc-mov" type="text" placeholder="Ex: 10161463">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Quantidade de produtos *</label>
+            <input class="form-input" id="direc-qtd" type="number" min="1" placeholder="Ex: 120">
+          </div>
+          <div class="form-error" id="direc-form-error"></div>
+          <button class="btn-save" id="btn-salvar-direc" onclick="salvarDirecionamento()">
+            <i class="ti ti-device-floppy"></i> Direcionar
+          </button>
+        </div>
+
+        <!-- BALANCEAMENTO -->
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+            <div class="card-label" style="margin:0;">Balanceamento por colaborador</div>
+            <input type="date" id="direc-data-filtro" style="font-size:13px;padding:6px 10px;border-radius:var(--radius-md);border:1px solid var(--border-md);background:var(--bg-primary);color:var(--text-primary);" onchange="carregarDirecionamentos()">
+          </div>
+          <div id="direc-resumo" style="display:flex;flex-direction:column;gap:12px;">
+            <div class="empty-state">Nenhum direcionamento nesse dia</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- HISTÓRICO DO DIA -->
+      <div class="card">
+        <div class="hist-filters">
+          <span class="hist-label">Pedidos direcionados <span id="direc-hist-count" class="hist-count"></span></span>
+        </div>
+        <div class="table-wrap">
+          <table class="hist-table">
+            <thead>
+              <tr>
+                <th style="width:110px;">Pedido</th>
+                <th>Colaborador</th>
+                <th style="width:140px;">Qtd. produtos</th>
+                <th style="width:90px;">Hora</th>
+                <th style="width:50px;"></th>
+              </tr>
+            </thead>
+            <tbody id="direc-body">
+              <tr><td colspan="5" class="empty-state"><div class="spinner"></div> Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
   </main>
 </div>
 
@@ -664,7 +749,7 @@ const PIE6=['#378ADD','#7F77DD','#D85A30','#1D9E75','#EF9F27','#D4537E'];
 const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const SEMANAS=['Sem 1','Sem 2','Sem 3','Sem 4'];
 
-let allPedidos=[],allColabs=[],allLogs=[];
+let allPedidos=[],allColabs=[],allLogs=[],allDirecionamentos=[];
 let barInst,lineInst,groupedInst,overlapInst,pieInst,eficInst,mpChartInst;
 let pollingInterval=null;
 
@@ -689,6 +774,15 @@ function atualizarDatalist(){
   const dl=document.getElementById('colab-datalist');if(!dl)return;
   const ativos=allColabs.filter(c=>c.status==='ativo'||!c.status);
   dl.innerHTML=ativos.map(c=>`<option value="${c.nome}">`).join('');
+  popularSelectDirecColab();
+}
+
+function popularSelectDirecColab(){
+  const sel=document.getElementById('direc-colab');if(!sel)return;
+  const cur=sel.value;
+  const ativos=allColabs.filter(c=>c.status==='ativo'||!c.status);
+  sel.innerHTML='<option value="">Selecione o colaborador...</option>'+ativos.map(c=>`<option value="${c.nome}">${c.nome}</option>`).join('');
+  if(cur)sel.value=cur;
 }
 
 async function carregarDados(){
@@ -711,7 +805,9 @@ async function carregarDados(){
     renderColaboradores();
     renderLog();
     if(document.getElementById('screen-analise').classList.contains('active'))renderAnalise();
+    if(document.getElementById('screen-direcionamento').classList.contains('active'))carregarDirecionamentos();
     atualizarSelectCI();
+    if(typeof allErros!=='undefined')renderErrosKpis();
   }catch(e){
     setDot('err');
     console.error('Erro Supabase detalhado:',e);
@@ -1022,7 +1118,8 @@ function fecharPerfil(){document.getElementById('modal-perfil').classList.remove
 function fecharPerfilSeSobreposto(e){if(e.target===document.getElementById('modal-perfil'))fecharPerfil();}
 
 window.showTab=function(tab){
-  ['dash','pedidos','colaboradores','analise','log','comparativo','erros'].forEach(t=>{
+  if(RESTRITO&&tab!=='direcionamento')return;
+  ['dash','pedidos','colaboradores','analise','log','comparativo','erros','direcionamento'].forEach(t=>{
     document.getElementById('screen-'+t).classList.toggle('active',t===tab);
     document.getElementById('tab-'+t).classList.toggle('active',t===tab);
   });
@@ -1030,6 +1127,7 @@ window.showTab=function(tab){
   if(tab==='analise')renderAnalise();
   if(tab==='comparativo'){atualizarSelectCI();renderComparativoIndividual();}
   if(tab==='erros'){carregarErros();}
+  if(tab==='direcionamento'){carregarDirecionamentos();}
 };
 
 window.validarHorarios=validarHorarios;
@@ -1066,19 +1164,37 @@ async function verificarSessao(){
   }
 }
 
+const RESTRITO_EMAIL='solangesantos283@gmail.com';
+let RESTRITO=false;
+
 function mostrarApp(user){
   document.getElementById('login-screen').classList.remove('active');
   document.getElementById('app-screen').style.display='flex';
   const email=user?.email||'';
   document.querySelector('.user-name').textContent=email;
   document.querySelector('.user-av').textContent=email.substring(0,2).toUpperCase();
+
+  RESTRITO=email.trim().toLowerCase()===RESTRITO_EMAIL;
+  if(RESTRITO){
+    ['nav-label-principal','tab-dash','tab-pedidos','tab-colaboradores','nav-label-relatorios','tab-analise','tab-comparativo','tab-erros','nav-label-sistema','tab-log'].forEach(id=>{
+      const el=document.getElementById(id);if(el)el.style.display='none';
+    });
+    document.querySelector('.sidebar-name').textContent='Direcionamento';
+    document.querySelector('.sidebar-sub').textContent='VX Case';
+  }
+
   carregarDados();
-  carregarErros();
   buildDashMesOptions();
   buildHistMesOptions();
   buildAnaliseMesOptions('a');
   buildAnaliseMesOptions('b');
   buildHeatmapMes();
+
+  if(RESTRITO){
+    showTab('direcionamento');
+  }else{
+    carregarErros();
+  }
 }
 
 async function fazerLogin(){
@@ -1380,6 +1496,19 @@ function renderErrosKpis(){
   document.getElementById('erros-total-mes').textContent=errosMes;
   document.getElementById('erros-total-hist').textContent=allErros.length;
 
+  // Taxa de erros do mês x quantidade de produtos atendidos no mês
+  const taxaEl=document.getElementById('erros-pizza-taxa');
+  if(taxaEl){
+    const produtosMes=allPedidos.filter(p=>(p.data||'').startsWith(mesAtual)).reduce((s,p)=>s+(p.qtd||0),0);
+    if(produtosMes>0){
+      const taxa=(errosMes/produtosMes*100);
+      const casas=taxa>0&&taxa<0.01?4:2;
+      taxaEl.textContent=`${taxa.toLocaleString('pt-BR',{minimumFractionDigits:casas,maximumFractionDigits:casas})}% de erro (${errosMes}/${produtosMes.toLocaleString('pt-BR')} prod.)`;
+    }else{
+      taxaEl.textContent='Sem produtos atendidos no mês';
+    }
+  }
+
   // Motivo mais frequente
   const freq={};
   allErros.forEach(e=>{const m=e.motivo||'Outro';freq[m]=(freq[m]||0)+1;});
@@ -1446,6 +1575,134 @@ function renderErrosPizza(){
 window.salvarErro=salvarErro;
 window.deletarErro=deletarErro;
 window.renderErros=renderErros;
+
+/* ── DIRECIONAMENTO DE PEDIDOS ── */
+function initDirecDatas(){
+  const hoje=new Date().toISOString().substring(0,10);
+  const inp=document.getElementById('direc-data-input');
+  const filtro=document.getElementById('direc-data-filtro');
+  if(inp&&!inp.value)inp.value=hoje;
+  if(filtro&&!filtro.value)filtro.value=hoje;
+}
+
+async function carregarDirecionamentos(){
+  initDirecDatas();
+  popularSelectDirecColab();
+  const dataSel=document.getElementById('direc-data-filtro')?.value||new Date().toISOString().substring(0,10);
+  const body=document.getElementById('direc-body');
+  if(body)body.innerHTML='<tr><td colspan="5" class="empty-state"><div class="spinner"></div> Carregando...</td></tr>';
+  try{
+    const{data,error}=await sb.from('direcionamentos').select('*').eq('data',dataSel).order('criado_em',{ascending:false});
+    if(error)throw error;
+    allDirecionamentos=data||[];
+    renderDirecionamentoResumo();
+    renderDirecionamentoHistorico();
+  }catch(e){
+    console.error('Erro ao carregar direcionamentos:',e);
+    if(body)body.innerHTML='<tr><td colspan="5" class="empty-state">Erro ao carregar</td></tr>';
+  }
+}
+
+function renderDirecionamentoResumo(){
+  const el=document.getElementById('direc-resumo');if(!el)return;
+  const ativos=allColabs.filter(c=>c.status==='ativo'||!c.status);
+  const nomes=ativos.map(c=>c.nome);
+  const porColab={};
+  nomes.forEach(n=>porColab[n]=0);
+  allDirecionamentos.forEach(d=>{porColab[d.colab]=(porColab[d.colab]||0)+(d.qtd||0);});
+
+  const totalProdutos=allDirecionamentos.reduce((s,d)=>s+(d.qtd||0),0);
+  const qtdColabs=Object.keys(porColab).length||1;
+  const media=totalProdutos/qtdColabs;
+
+  document.getElementById('direc-total-pedidos').textContent=allDirecionamentos.length;
+  document.getElementById('direc-total-produtos').textContent=totalProdutos.toLocaleString('pt-BR');
+  document.getElementById('direc-media').textContent=totalProdutos?media.toLocaleString('pt-BR',{maximumFractionDigits:0}):'—';
+
+  const entries=Object.entries(porColab).sort((a,b)=>b[1]-a[1]);
+  const max=Math.max(1,...entries.map(e=>e[1]));
+
+  el.innerHTML=entries.length
+    ?entries.map(([nome,qtd])=>{
+      const ci=nomes.indexOf(nome)%6;
+      const idx=ci<0?0:ci;
+      const pct=Math.round(qtd/max*100);
+      const delta=qtd-media;
+      const deltaTxt=totalProdutos?`${delta>=0?'+':''}${delta.toLocaleString('pt-BR',{maximumFractionDigits:0})} vs média`:'';
+      const corDelta=delta>media*0.15?'var(--red-text)':(delta<-media*0.15?'var(--green-dark)':'var(--text-tertiary)');
+      return `<div>
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+          <div style="display:flex;align-items:center;gap:6px;"><div class="rank-av" style="background:${FILL6[idx]};color:${STROKE6[idx]};width:22px;height:22px;font-size:9px;">${getInit(nome)}</div><span class="nome-link" onclick="abrirPerfil('${nome}')">${nome}</span></div>
+          <div style="text-align:right;"><b>${qtd.toLocaleString('pt-BR')}</b><div style="font-size:10px;color:${corDelta};">${deltaTxt}</div></div>
+        </div>
+        <div style="height:7px;background:var(--bg-secondary);border-radius:4px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${STROKE6[idx]};border-radius:4px;"></div></div>
+      </div>`;
+    }).join('')
+    :'<div class="empty-state">Nenhum colaborador ativo cadastrado</div>';
+}
+
+function renderDirecionamentoHistorico(){
+  const body=document.getElementById('direc-body');if(!body)return;
+  const countEl=document.getElementById('direc-hist-count');
+  if(countEl)countEl.textContent=allDirecionamentos.length?`(${allDirecionamentos.length})`:'';
+  body.innerHTML=allDirecionamentos.length
+    ?allDirecionamentos.map(d=>`<tr><td>${d.mov||'—'}</td><td>${d.colab}</td><td>${(d.qtd||0).toLocaleString('pt-BR')}</td><td>${d.criado_em?new Date(d.criado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'—'}</td><td><button class="btn-del" onclick="deletarDirecionamento('${d.id}')"><i class="ti ti-trash"></i></button></td></tr>`).join('')
+    :'<tr><td colspan="5" class="empty-state">Nenhum pedido direcionado nesse dia</td></tr>';
+}
+
+async function salvarDirecionamento(){
+  const data=document.getElementById('direc-data-input').value;
+  const colab=document.getElementById('direc-colab').value;
+  const mov=document.getElementById('direc-mov').value.trim();
+  const qtd=parseInt(document.getElementById('direc-qtd').value,10);
+  const errEl=document.getElementById('direc-form-error');
+  const okMsg=document.getElementById('direc-msg-ok');
+  const errMsg=document.getElementById('direc-msg-err');
+  errEl.textContent='';
+  okMsg.style.display='none';
+  errMsg.style.display='none';
+
+  if(!data||!colab||!qtd||qtd<=0){
+    errEl.textContent='Preencha data, colaborador e quantidade de produtos.';
+    return;
+  }
+  const btn=document.getElementById('btn-salvar-direc');
+  btn.disabled=true;
+  try{
+    const{error}=await sb.from('direcionamentos').insert({data,colab,mov:mov||null,qtd});
+    if(error)throw error;
+    okMsg.style.display='flex';
+    setTimeout(()=>{okMsg.style.display='none';},2500);
+    document.getElementById('direc-mov').value='';
+    document.getElementById('direc-qtd').value='';
+    document.getElementById('direc-colab').value='';
+    const filtro=document.getElementById('direc-data-filtro');
+    if(filtro)filtro.value=data;
+    carregarDirecionamentos();
+  }catch(e){
+    console.error('Erro ao salvar direcionamento:',e);
+    document.getElementById('direc-msg-err-txt').textContent='Erro ao salvar. Tente novamente.';
+    errMsg.style.display='flex';
+  }finally{
+    btn.disabled=false;
+  }
+}
+
+async function deletarDirecionamento(id){
+  if(!confirm('Excluir esse direcionamento?'))return;
+  try{
+    const{error}=await sb.from('direcionamentos').delete().eq('id',id);
+    if(error)throw error;
+    carregarDirecionamentos();
+  }catch(e){
+    console.error('Erro ao excluir direcionamento:',e);
+    alert('Erro ao excluir.');
+  }
+}
+
+window.salvarDirecionamento=salvarDirecionamento;
+window.deletarDirecionamento=deletarDirecionamento;
+window.carregarDirecionamentos=carregarDirecionamentos;
 
 
 
