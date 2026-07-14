@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistema de Análise de Armazém</title>
+  <title>Análise de Envio - Estoque Geral Vx case</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -249,7 +249,7 @@
 <div class="app" id="app-screen" style="display:none;">
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div><div class="sidebar-name">Análise de Armazém</div><div class="sidebar-sub">Sistema de Performance</div></div>
+      <div><div class="sidebar-name">Análise de Envio</div><div class="sidebar-sub">Estoque Geral Vx case</div></div>
     </div>
     <nav class="nav-section">
       <div class="nav-section-label" id="nav-label-principal">Principal</div>
@@ -289,7 +289,7 @@
           <select id="filtro-mes" onchange="renderDash()"></select>
           <button onclick="carregarDados()" title="Atualizar"><i class="ti ti-refresh"></i></button>
           <button class="theme-btn" onclick="toggleTheme()" id="theme-btn"><i class="ti ti-moon" id="theme-icon"></i> <span id="theme-label">Escuro</span></button>
-          <div class="rt-indicator"><div class="rt-dot"></div> Tempo real</div>
+          <div class="rt-indicator"><div class="rt-dot"></div> ONLINE</div>
         </div>
       </div>
       <div class="kpi-grid" id="kpi-grid">
@@ -319,11 +319,11 @@
       <div class="podium-wrap"><div class="podium-title"><i class="ti ti-trophy" style="color:#F5C842;margin-right:6px;"></i>Pódio do mês — Top 3</div><div class="podium" id="podium-container"><div class="empty-state" style="width:100%;">Nenhum dado neste mês</div></div></div>
       <div class="mid-grid">
         <div class="card"><div class="card-label">Ranking</div><div id="ranking-list"><div class="empty-state"><div class="spinner"></div></div></div></div>
-        <div class="card"><div class="card-label">Produção por colaborador <span style="font-size:10px;font-weight:400;color:var(--text-tertiary);">hover para detalhes</span></div><div style="position:relative;height:200px;"><canvas id="barChart"></canvas></div></div>
+        <div class="card"><div class="card-label">Produção por colaborador</div><div style="position:relative;height:200px;"><canvas id="barChart"></canvas></div></div>
       </div>
       <div class="bottom-card"><div class="card-label">Evolução semanal</div><div style="position:relative;height:130px;"><canvas id="lineChart"></canvas></div></div>
       <div class="card" style="margin-bottom:16px;">
-        <div class="card-label" style="margin-bottom:4px;">Mapa de eficiência <span style="font-size:10px;font-weight:400;color:var(--text-tertiary);">tempo médio × volume — hover nos pontos</span></div>
+        <div class="card-label" style="margin-bottom:4px;">Mapa de eficiência <span style="font-size:10px;font-weight:400;color:var(--text-tertiary);">tempo médio × volume</span></div>
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
           <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 10px;border-radius:20px;background:#E1F5EE;color:#0F6E56;font-weight:500;">🏆 Ideal</span>
           <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 10px;border-radius:20px;background:#E6F1FB;color:#0C447C;font-weight:500;">📦 Alto volume</span>
@@ -361,7 +361,7 @@
 
     <!-- PEDIDOS -->
     <section class="screen" id="screen-pedidos">
-      <div class="top-row"><div><div class="page-title">Cadastro de pedidos</div><div class="page-sub">Dados salvos em tempo real no Supabase</div></div><div class="rt-indicator"><div class="rt-dot"></div> Ao vivo</div></div>
+      <div class="top-row"><div><div class="page-title">Cadastro de pedidos</div><div class="page-sub">Dados salvos em tempo real no Supabase</div></div><div class="rt-indicator"><div class="rt-dot"></div> ONLINE</div></div>
       <div class="form-2col">
         <div class="card">
           <div class="card-label"><i class="ti ti-plus"></i> Novo registro</div>
@@ -568,8 +568,8 @@
     <!-- ERROS OPERACIONAIS -->
     <section class="screen" id="screen-erros">
       <div class="top-row">
-        <div><div class="page-title">Erros Operacionais</div><div class="page-sub">Registro e controle de divergências no armazém</div></div>
-        <div class="rt-indicator"><div class="rt-dot"></div> Ao vivo</div>
+        <div><div class="page-title">Erros Operacionais</div><div class="page-sub">Registro e controle de divergências Estoque Geral Vx case</div></div>
+        <div class="rt-indicator"><div class="rt-dot"></div> ONLINE</div>
       </div>
 
       <!-- KPIs -->
@@ -622,7 +622,7 @@
           </div>
           <div class="form-error" id="erro-form-error"></div>
           <button class="btn-save" id="btn-salvar-erro" onclick="salvarErro()">
-            <i class="ti ti-device-floppy"></i> Registrar erro
+            <i class="ti ti-device-floppy"></i> Registro
           </button>
         </div>
 
@@ -688,7 +688,7 @@
     <section class="screen" id="screen-direcionamento">
       <div class="top-row">
         <div><div class="page-title">Direcionamento</div></div>
-        <div class="rt-indicator"><div class="rt-dot"></div> Ao vivo</div>
+        <div class="rt-indicator"><div class="rt-dot"></div> ONLINE</div>
       </div>
 
       <div class="kpi-grid" id="direc-kpis" style="margin-bottom:18px;">
@@ -1528,7 +1528,7 @@ async function salvarErro(){
     document.getElementById('erro-msg-err-txt').textContent=e?.message||'Erro ao salvar';
     msgErr.style.display='flex';
   }finally{
-    btn.disabled=false;btn.innerHTML='<i class="ti ti-device-floppy"></i> Registrar erro';
+    btn.disabled=false;btn.innerHTML='<i class="ti ti-device-floppy"></i> Registro';
   }
 }
 
