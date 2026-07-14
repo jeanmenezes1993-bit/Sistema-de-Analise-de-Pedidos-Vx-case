@@ -1678,19 +1678,26 @@ function initDirecDatas(){
   if(filtro&&!filtro.value)filtro.value=hoje;
 }
 
+let direcDiaHash=null;
 async function carregarDirecionamentos(){
   initDirecDatas();
   popularSelectDirecColab();
   const dataSel=document.getElementById('direc-data-filtro')?.value||new Date().toISOString().substring(0,10);
   const body=document.getElementById('direc-body');
-  if(body)body.innerHTML='<tr><td colspan="5" class="empty-state"><div class="spinner"></div> Carregando...</td></tr>';
+  const primeiraCarga=!(body&&body.dataset.carregado==='1');
+  if(body&&primeiraCarga)body.innerHTML='<tr><td colspan="5" class="empty-state"><div class="spinner"></div> Carregando...</td></tr>';
   try{
     const{data,error}=await sb.from('direcionamentos').select('*').eq('data',dataSel).order('criado_em',{ascending:false});
     if(error)throw error;
-    allDirecionamentos=data||[];
+    const novo=data||[];
+    const hash=dataSel+'|'+JSON.stringify(novo);
+    if(hash===direcDiaHash&&!primeiraCarga)return;
+    direcDiaHash=hash;
+    allDirecionamentos=novo;
     renderDirecionamentoResumo();
     renderDirecionamentoHistorico();
     renderDirecCalendario();
+    if(body)body.dataset.carregado='1';
   }catch(e){
     console.error('Erro ao carregar direcionamentos:',e);
     if(body)body.innerHTML='<tr><td colspan="5" class="empty-state">Erro ao carregar</td></tr>';
@@ -1810,13 +1817,15 @@ function irParaMesNoCalendario(dataStr){
   buildOptions('direc-cal-mes',ano,`${ano}-${mes}`);
 }
 
+let direcMesHash=null;
 async function renderDirecCalendario(){
   if(!document.getElementById('direc-cal-mes')?.value)buildDirecCalMesOptions();
   const mes=document.getElementById('direc-cal-mes')?.value;
   const container=document.getElementById('direc-cal-container');
   if(!container)return;
   if(!mes){container.innerHTML='<div class="empty-state">Selecione o mês</div>';return;}
-  container.innerHTML='<div class="empty-state"><div class="spinner"></div> Carregando...</div>';
+  const primeiraCarga=!(container.dataset.mesCarregado===mes);
+  if(primeiraCarga)container.innerHTML='<div class="empty-state"><div class="spinner"></div> Carregando...</div>';
   const primeiroDia=new Date(mes+'-01');
   const ultimoDiaNum=new Date(primeiroDia.getFullYear(),primeiroDia.getMonth()+1,0).getDate();
   const dataIni=`${mes}-01`;
@@ -1825,6 +1834,9 @@ async function renderDirecCalendario(){
     const{data,error}=await sb.from('direcionamentos').select('*').gte('data',dataIni).lte('data',dataFim);
     if(error)throw error;
     const registros=data||[];
+    const hash=mes+'|'+JSON.stringify(registros);
+    if(hash===direcMesHash&&!primeiraCarga)return;
+    direcMesHash=hash;
     const porDia={};
     registros.forEach(d=>{
       if(!d.data)return;
@@ -1861,6 +1873,7 @@ async function renderDirecCalendario(){
     });
     html+='</div>';
     container.innerHTML=html;
+    container.dataset.mesCarregado=mes;
     renderTotalMesPorColab(registros,nomes);
   }catch(e){
     console.error('Erro ao carregar calendário de direcionamentos:',e);
