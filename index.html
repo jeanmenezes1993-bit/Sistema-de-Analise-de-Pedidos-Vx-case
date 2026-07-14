@@ -1721,13 +1721,10 @@ function renderDirecionamentoResumo(){
       const ci=nomes.indexOf(nome)%6;
       const idx=ci<0?0:ci;
       const pct=Math.round(qtd/max*100);
-      const delta=qtd-media;
-      const deltaTxt=totalProdutos?`${delta>=0?'+':''}${delta.toLocaleString('pt-BR',{maximumFractionDigits:0})} vs média`:'';
-      const corDelta=delta>media*0.15?'var(--red-text)':(delta<-media*0.15?'var(--green-dark)':'var(--text-tertiary)');
       return `<div>
         <div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:4px;">
           <div style="display:flex;align-items:center;gap:6px;"><div class="rank-av" style="background:${FILL6[idx]};color:${STROKE6[idx]};width:22px;height:22px;font-size:9px;">${getInit(nome)}</div><span class="nome-link" onclick="abrirPerfil('${nome}')">${nome}</span></div>
-          <div style="text-align:right;"><b>${qtd.toLocaleString('pt-BR')}</b><div style="font-size:10px;color:${corDelta};">${deltaTxt}</div></div>
+          <b>${qtd.toLocaleString('pt-BR')}</b>
         </div>
         <div style="height:7px;background:var(--bg-secondary);border-radius:4px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${STROKE6[idx]};border-radius:4px;"></div></div>
       </div>`;
