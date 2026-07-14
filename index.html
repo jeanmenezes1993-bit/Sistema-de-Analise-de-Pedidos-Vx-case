@@ -753,6 +753,14 @@
         <div id="direc-cal-container"></div>
       </div>
 
+      <!-- TOTAL DO MÊS POR COLABORADOR -->
+      <div class="card" style="margin-bottom:18px;">
+        <div class="card-label">Total do mês por colaborador</div>
+        <div id="direc-total-mes-colab" style="display:flex;flex-direction:column;gap:10px;">
+          <div class="empty-state">Nenhum direcionamento nesse mês</div>
+        </div>
+      </div>
+
       <!-- HISTÓRICO DO DIA -->
       <div class="card">
         <div class="hist-filters">
@@ -1853,10 +1861,34 @@ async function renderDirecCalendario(){
     });
     html+='</div>';
     container.innerHTML=html;
+    renderTotalMesPorColab(registros,nomes);
   }catch(e){
     console.error('Erro ao carregar calendário de direcionamentos:',e);
     container.innerHTML='<div class="empty-state">Erro ao carregar o calendário</div>';
+    document.getElementById('direc-total-mes-colab').innerHTML='<div class="empty-state">Erro ao carregar</div>';
   }
+}
+
+function renderTotalMesPorColab(registros,nomes){
+  const el=document.getElementById('direc-total-mes-colab');if(!el)return;
+  const totais={};
+  nomes.forEach(n=>totais[n]=0);
+  registros.forEach(d=>{totais[d.colab]=(totais[d.colab]||0)+(d.qtd||0);});
+  const entradas=Object.entries(totais).sort((a,b)=>b[1]-a[1]);
+  const max=Math.max(1,...entradas.map(e=>e[1]));
+  el.innerHTML=entradas.length
+    ?entradas.map(([nome,qtd])=>{
+      const ci=nomes.indexOf(nome);const idx=ci<0?0:ci%6;
+      const pct=Math.round(qtd/max*100);
+      return`<div>
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+          <div style="display:flex;align-items:center;gap:6px;"><div class="rank-av" style="background:${FILL6[idx]};color:${STROKE6[idx]};width:22px;height:22px;font-size:9px;">${getInit(nome)}</div><span class="nome-link" onclick="abrirPerfil('${nome}')">${nome}</span></div>
+          <b>${qtd.toLocaleString('pt-BR')}</b>
+        </div>
+        <div style="height:7px;background:var(--bg-secondary);border-radius:4px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${STROKE6[idx]};border-radius:4px;"></div></div>
+      </div>`;
+    }).join('')
+    :'<div class="empty-state">Nenhum colaborador cadastrado</div>';
 }
 
 window.buildDirecCalMesOptions=buildDirecCalMesOptions;
