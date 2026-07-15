@@ -732,10 +732,10 @@
         <div class="card">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
             <div class="card-label" style="margin:0;">Balanceamento por colaborador</div>
-            <input type="date" id="direc-data-filtro" style="font-size:13px;padding:6px 10px;border-radius:var(--radius-md);border:1px solid var(--border-md);background:var(--bg-primary);color:var(--text-primary);" onchange="carregarDirecionamentos()">
+            <div id="direc-resumo-mes-label" style="font-size:12px;font-weight:600;color:var(--text-secondary);"></div>
           </div>
           <div id="direc-resumo" style="display:flex;flex-direction:column;gap:12px;">
-            <div class="empty-state">Nenhum direcionamento nesse dia</div>
+            <div class="empty-state">Nenhum direcionamento nesse mês</div>
           </div>
         </div>
       </div>
@@ -758,6 +758,7 @@
       <div class="card">
         <div class="hist-filters">
           <span class="hist-label">Pedidos direcionados <span id="direc-hist-count" class="hist-count"></span></span>
+          <input type="date" id="direc-data-filtro" onchange="carregarDirecionamentos()">
         </div>
         <div class="table-wrap">
           <table class="hist-table">
@@ -1098,8 +1099,8 @@ function renderDash(){
   if(barInst)barInst.destroy();
   if(top7.length)barInst=new Chart(document.getElementById('barChart'),{type:'bar',data:{labels:top7.map(c=>c.nome.split(' ')[0]),datasets:[{label:'Produtos',data:top7.map(c=>c.qtd),backgroundColor:top7.map(c=>FILL6[allCols.indexOf(c.nome)%6]),borderColor:top7.map(c=>STROKE6[allCols.indexOf(c.nome)%6]),borderWidth:1,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const c=top7[ctx.dataIndex];return[`Pedidos: ${c.pedidos}`,`Produtos: ${c.qtd.toLocaleString('pt-BR')}`];}}}},scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
 
-  const inicio=new Date(mes+'-01');
-  const sems=SEMANAS.map((_,i)=>d.filter(p=>{const dt=new Date(p.data);return Math.floor((dt-inicio)/(7*24*3600*1000))===i;}).reduce((s,p)=>s+(p.qtd||0),0));
+  const inicio=new Date(+mes.slice(0,4),+mes.slice(5,7)-1,1);
+  const sems=SEMANAS.map((_,i)=>d.filter(p=>{const dt=new Date(+p.data.slice(0,4),+p.data.slice(5,7)-1,+p.data.slice(8,10));return Math.floor((dt-inicio)/(7*24*3600*1000))===i;}).reduce((s,p)=>s+(p.qtd||0),0));
   if(lineInst)lineInst.destroy();
   lineInst=new Chart(document.getElementById('lineChart'),{type:'line',data:{labels:SEMANAS,datasets:[{label:'Volume',data:sems,borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,.07)',borderWidth:2,fill:true,tension:.3,pointBackgroundColor:'#1D9E75',pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}}}}});
 
@@ -1144,8 +1145,8 @@ function renderPainelAnalise(prefix,mes,barInst2,pieInst2,lineInst2){
   let novoPie=null;
   if(g.length&&totQ>0)novoPie=new Chart(document.getElementById(prefix+'-pie'),{type:'doughnut',data:{labels:g.map(c=>c.nome),datasets:[{data:g.map(c=>c.qtd),backgroundColor:PIE6.slice(0,g.length),borderWidth:2,borderColor:'#fff',hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'50%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const p=totQ?Math.round(ctx.parsed/totQ*100):0;return`${ctx.label}: ${ctx.parsed.toLocaleString('pt-BR')} (${p}%)`;}}}}}});
 
-  const inicio=new Date(mes+'-01');
-  const semVol=SEMANAS.map((_,i)=>dados.filter(p=>{const dt=new Date(p.data);return Math.floor((dt-inicio)/(7*24*3600*1000))===i;}).reduce((s,p)=>s+(p.qtd||0),0));
+  const inicio=new Date(+mes.slice(0,4),+mes.slice(5,7)-1,1);
+  const semVol=SEMANAS.map((_,i)=>dados.filter(p=>{const dt=new Date(+p.data.slice(0,4),+p.data.slice(5,7)-1,+p.data.slice(8,10));return Math.floor((dt-inicio)/(7*24*3600*1000))===i;}).reduce((s,p)=>s+(p.qtd||0),0));
   if(lineInst2)lineInst2.destroy();
   const novoLine=new Chart(document.getElementById(prefix+'-line'),{type:'line',data:{labels:SEMANAS,datasets:[{label:mes,data:semVol,borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,.08)',borderWidth:2,tension:.3,pointRadius:3,pointBackgroundColor:'#1D9E75',fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
 
@@ -1425,7 +1426,7 @@ function renderHeatmap(){
   const diasSemana=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   const porDia={};
   dados.forEach(p=>{if(!p.data)return;if(!porDia[p.data])porDia[p.data]=0;porDia[p.data]+=(p.qtd||0);});
-  const primeiroDia=new Date(mes+'-01');
+  const primeiroDia=new Date(+mes.slice(0,4),+mes.slice(5,7)-1,1);
   const ultimoDia=new Date(primeiroDia.getFullYear(),primeiroDia.getMonth()+1,0);
   const semanas=[];let semAtual=[];
   for(let i=0;i<primeiroDia.getDay();i++)semAtual.push(null);
@@ -1687,7 +1688,6 @@ async function carregarDirecionamentos(){
     if(hash===direcDiaHash&&!primeiraCarga)return;
     direcDiaHash=hash;
     allDirecionamentos=novo;
-    renderDirecionamentoResumo();
     renderDirecionamentoHistorico();
     renderDirecCalendario();
     if(body)body.dataset.carregado='1';
@@ -1697,19 +1697,21 @@ async function carregarDirecionamentos(){
   }
 }
 
-function renderDirecionamentoResumo(){
+function renderDirecionamentoResumoMes(registros,mes){
   const el=document.getElementById('direc-resumo');if(!el)return;
   const ativos=allColabs.filter(c=>c.status==='ativo'||!c.status);
   const nomes=ativos.map(c=>c.nome);
   const porColab={};
   nomes.forEach(n=>porColab[n]=0);
-  allDirecionamentos.forEach(d=>{porColab[d.colab]=(porColab[d.colab]||0)+(d.qtd||0);});
+  registros.forEach(d=>{porColab[d.colab]=(porColab[d.colab]||0)+(d.qtd||0);});
 
-  const totalProdutos=allDirecionamentos.reduce((s,d)=>s+(d.qtd||0),0);
+  const totalProdutos=registros.reduce((s,d)=>s+(d.qtd||0),0);
   const qtdColabs=Object.keys(porColab).length||1;
   const media=totalProdutos/qtdColabs;
 
-  document.getElementById('direc-total-pedidos').textContent=allDirecionamentos.length;
+  const labelEl=document.getElementById('direc-resumo-mes-label');
+  if(labelEl&&mes){const[y,mo]=mes.split('-');labelEl.textContent=`${MESES[parseInt(mo)-1]} ${y}`;}
+  document.getElementById('direc-total-pedidos').textContent=registros.length;
   document.getElementById('direc-total-produtos').textContent=totalProdutos.toLocaleString('pt-BR');
   document.getElementById('direc-media').textContent=totalProdutos?media.toLocaleString('pt-BR',{maximumFractionDigits:0}):'—';
 
@@ -1816,7 +1818,7 @@ async function renderDirecCalendario(){
   if(!mes){container.innerHTML='<div class="empty-state">Selecione o mês</div>';return;}
   const primeiraCarga=!(container.dataset.mesCarregado===mes);
   if(primeiraCarga)container.innerHTML='<div class="empty-state"><div class="spinner"></div> Carregando...</div>';
-  const primeiroDia=new Date(mes+'-01');
+  const primeiroDia=new Date(+mes.slice(0,4),+mes.slice(5,7)-1,1);
   const ultimoDiaNum=new Date(primeiroDia.getFullYear(),primeiroDia.getMonth()+1,0).getDate();
   const dataIni=`${mes}-01`;
   const dataFim=`${mes}-${String(ultimoDiaNum).padStart(2,'0')}`;
@@ -1864,6 +1866,7 @@ async function renderDirecCalendario(){
     html+='</div>';
     container.innerHTML=html;
     container.dataset.mesCarregado=mes;
+    renderDirecionamentoResumoMes(registros,mes);
   }catch(e){
     console.error('Erro ao carregar calendário de direcionamentos:',e);
     container.innerHTML='<div class="empty-state">Erro ao carregar o calendário</div>';
