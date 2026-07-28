@@ -287,6 +287,7 @@
         <div class="filter-row">
           <select id="dash-ano" onchange="buildDashMesOptions();renderDash()"><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option></select>
           <select id="filtro-mes" onchange="renderDash()"></select>
+          <button class="btn-export pdf" onclick="exportarPDFColaboradores()" title="Exportar produtividade de todos os colaboradores no mês selecionado"><i class="ti ti-file-type-pdf"></i> Exportar PDF</button>
           <button onclick="carregarDados()" title="Atualizar"><i class="ti ti-refresh"></i></button>
           <button class="theme-btn" onclick="toggleTheme()" id="theme-btn"><i class="ti ti-moon" id="theme-icon"></i> <span id="theme-label">Escuro</span></button>
           <div class="rt-indicator"><div class="rt-dot"></div> ONLINE</div>
@@ -1172,6 +1173,85 @@ function renderAnalise(){
 
 function exportarExcel(){const mesA=document.getElementById('mes-a').value;const da=pedidosPorMes(mesA);if(!da.length){alert('Nenhum dado para exportar.');return;}const dados=da.map(p=>({'Movimento':p.mov||'','Data':(p.data||'').split('-').reverse().join('/'),'Qtd. Produtos':p.qtd||0,'Colaborador':p.colab||'','Hora Inicial':p.ti||'','Hora Final':p.tf||'','Duração (min)':durMin(p.ti,p.tf)}));const ws=XLSX.utils.json_to_sheet(dados);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,`Pedidos ${mesA}`);XLSX.writeFile(wb,`SAP_${mesA}.xlsx`);}
 function exportarPDF(){const mesA=document.getElementById('mes-a').value;const da=pedidosPorMes(mesA);if(!da.length){alert('Nenhum dado para exportar.');return;}const{jsPDF}=window.jspdf;const pdf=new jsPDF();pdf.setFontSize(16);pdf.setTextColor(29,158,117);pdf.text('SAP — Relatório de Performance',14,18);pdf.setFontSize(10);pdf.setTextColor(107,114,128);pdf.text(`Período: ${mesA} | Gerado: ${new Date().toLocaleDateString('pt-BR')}`,14,26);pdf.autoTable({startY:34,head:[['Movimento','Data','Qtd.','Colaborador','T.Inicial','T.Final','Duração']],body:da.map(p=>[''+p.mov,(p.data||'').split('-').reverse().join('/'),p.qtd||0,p.colab||'',p.ti||'',p.tf||'',durMin(p.ti,p.tf)+' min']),styles:{fontSize:9},headStyles:{fillColor:[29,158,117],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[249,250,251]}});pdf.save(`SAP_${mesA}.pdf`);}
+
+function hex2rgb(hex){const n=parseInt(hex.slice(1),16);return[(n>>16)&255,(n>>8)&255,n&255];}
+
+function exportarPDFColaboradores(){
+  const mes=document.getElementById('filtro-mes')?.value;
+  if(!mes){alert('Selecione um mês.');return;}
+  const dados=pedidosPorMes(mes);
+  const grupos=agruparColabs(dados);
+  const gruposMap={};grupos.forEach(g=>gruposMap[g.nome]=g);
+  const ativos=allColabs.filter(c=>c.status==='ativo'||!c.status);
+  const todosNomes=[...new Set([...ativos.map(c=>c.nome),...grupos.map(g=>g.nome)])];
+  const lista=todosNomes.map(nome=>{
+    const g=gruposMap[nome]||{pedidos:0,qtd:0,tempos:[]};
+    const colabInfo=allColabs.find(c=>c.nome===nome)||{cargo:''};
+    const avgT=g.tempos.length?Math.round(g.tempos.reduce((a,b)=>a+b,0)/g.tempos.length):0;
+    return{nome,cargo:colabInfo.cargo||'Colaborador',pedidos:g.pedidos,qtd:g.qtd,avgT};
+  }).sort((a,b)=>b.qtd-a.qtd);
+
+  if(!lista.length){alert('Nenhum colaborador cadastrado.');return;}
+
+  const{jsPDF}=window.jspdf;
+  const pdf=new jsPDF();
+  const pageW=pdf.internal.pageSize.getWidth();
+  const pageH=pdf.internal.pageSize.getHeight();
+  const marginX=14;
+  const cardW=pageW-marginX*2;
+  const cardH=32;
+  const gap=6;
+  let y=30;
+  const[ay,amo]=mes.split('-');
+
+  function cabecalho(){
+    pdf.setFontSize(16);pdf.setTextColor(29,158,117);pdf.setFont('helvetica','bold');
+    pdf.text('SAP — Produtividade por Colaborador',marginX,18);
+    pdf.setFontSize(10);pdf.setTextColor(107,114,128);pdf.setFont('helvetica','normal');
+    pdf.text(`Período: ${MESES[parseInt(amo)-1]} de ${ay}  |  Gerado em ${new Date().toLocaleDateString('pt-BR')}`,marginX,25);
+  }
+  cabecalho();
+
+  lista.forEach((c,i)=>{
+    if(y+cardH>pageH-15){pdf.addPage();y=20;cabecalho();y=30;}
+    const idx=i%6;
+    const[fr,fg,fb]=hex2rgb(FILL6[idx]);
+    const[sr,sg,sb]=hex2rgb(STROKE6[idx]);
+
+    pdf.setDrawColor(228,228,228);
+    pdf.setFillColor(250,250,251);
+    pdf.roundedRect(marginX,y,cardW,cardH,2,2,'FD');
+
+    const cx=marginX+13,cy=y+cardH/2;
+    pdf.setFillColor(fr,fg,fb);
+    pdf.circle(cx,cy,7,'F');
+    pdf.setTextColor(sr,sg,sb);pdf.setFontSize(8.5);pdf.setFont('helvetica','bold');
+    pdf.text(getInit(c.nome),cx,cy+1.1,{align:'center'});
+
+    pdf.setTextColor(30,30,30);pdf.setFontSize(11);pdf.setFont('helvetica','bold');
+    pdf.text(c.nome,marginX+25,y+11);
+    pdf.setTextColor(120,120,120);pdf.setFontSize(8.5);pdf.setFont('helvetica','normal');
+    pdf.text(c.cargo,marginX+25,y+17);
+    const pos=i+1;
+    pdf.setTextColor(180,140,20);pdf.setFontSize(8);
+    pdf.text(`${pos}º lugar no ranking do mês`,marginX+25,y+23);
+
+    const kpiX=marginX+108;
+    const kpis=[['Pedidos',''+c.pedidos],['Produtos',c.qtd.toLocaleString('pt-BR')],['Tempo médio',c.avgT?c.avgT+' min':'—']];
+    kpis.forEach((k,ki)=>{
+      const kx=kpiX+ki*26;
+      pdf.setTextColor(140,140,140);pdf.setFontSize(7);pdf.setFont('helvetica','normal');
+      pdf.text(k[0],kx,y+12);
+      pdf.setTextColor(30,30,30);pdf.setFontSize(11);pdf.setFont('helvetica','bold');
+      pdf.text(k[1],kx,y+21);
+    });
+
+    y+=cardH+gap;
+  });
+
+  pdf.save(`SAP_Produtividade_${mes}.pdf`);
+}
+window.exportarPDFColaboradores=exportarPDFColaboradores;
 
 function abrirPerfil(nomeColab){
   const pedidosColab=allPedidos.filter(p=>p.colab===nomeColab);
