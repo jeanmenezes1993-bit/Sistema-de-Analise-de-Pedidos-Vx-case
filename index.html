@@ -1183,7 +1183,7 @@ function exportarPDFColaboradores(){
   const grupos=agruparColabs(dados);
   const gruposMap={};grupos.forEach(g=>gruposMap[g.nome]=g);
   const ativos=allColabs.filter(c=>c.status==='ativo'||!c.status);
-  const todosNomes=[...new Set([...ativos.map(c=>c.nome),...grupos.map(g=>g.nome)])];
+  const todosNomes=ativos.map(c=>c.nome);
   const lista=todosNomes.map(nome=>{
     const g=gruposMap[nome]||{pedidos:0,qtd:0,tempos:[]};
     const colabInfo=allColabs.find(c=>c.nome===nome)||{cargo:''};
