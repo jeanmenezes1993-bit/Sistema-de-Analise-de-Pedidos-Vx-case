@@ -1201,19 +1201,21 @@ function exportarPDFColaboradores(){
   const cardW=pageW-marginX*2;
   const cardH=32;
   const gap=6;
-  let y=30;
+  let y=36;
   const[ay,amo]=mes.split('-');
 
   function cabecalho(){
-    pdf.setFontSize(16);pdf.setTextColor(29,158,117);pdf.setFont('helvetica','bold');
-    pdf.text('SAP — Produtividade por Colaborador',marginX,18);
-    pdf.setFontSize(10);pdf.setTextColor(107,114,128);pdf.setFont('helvetica','normal');
-    pdf.text(`Período: ${MESES[parseInt(amo)-1]} de ${ay}  |  Gerado em ${new Date().toLocaleDateString('pt-BR')}`,marginX,25);
+    pdf.setFontSize(14);pdf.setTextColor(29,158,117);pdf.setFont('helvetica','bold');
+    pdf.text('Sistema Vx case Analise de pedidos',marginX,16);
+    pdf.setFontSize(11);pdf.setTextColor(60,60,60);pdf.setFont('helvetica','bold');
+    pdf.text('Produtividade por Colaborador',marginX,23);
+    pdf.setFontSize(9.5);pdf.setTextColor(107,114,128);pdf.setFont('helvetica','normal');
+    pdf.text(`Período: ${MESES[parseInt(amo)-1]} de ${ay}  |  Gerado em ${new Date().toLocaleDateString('pt-BR')}`,marginX,29);
   }
   cabecalho();
 
   lista.forEach((c,i)=>{
-    if(y+cardH>pageH-15){pdf.addPage();y=20;cabecalho();y=30;}
+    if(y+cardH>pageH-15){pdf.addPage();cabecalho();y=36;}
     const idx=i%6;
     const[fr,fg,fb]=hex2rgb(FILL6[idx]);
     const[sr,sg,sb]=hex2rgb(STROKE6[idx]);
