@@ -366,7 +366,7 @@
       <div class="top-row"><div><div class="page-title">Cadastro de pedidos</div></div><div class="rt-indicator"><div class="rt-dot"></div> ONLINE</div></div>
       <div class="form-2col">
         <div class="card">
-          <div class="card-label"><i class="ti ti-plus"></i> Novo registro</div>
+          <div class="card-label" id="pedido-form-title"><i class="ti ti-plus"></i> Novo registro</div>
           <div id="msg-ok" class="msg msg-ok"><i class="ti ti-circle-check"></i> Pedido salvo!</div>
           <div id="msg-err" class="msg msg-err"><i class="ti ti-alert-circle"></i><span id="msg-err-txt"></span></div>
           <div class="form-group">
@@ -379,13 +379,17 @@
           </div>
           <div class="form-group"><label class="form-label">Data *</label><input class="form-input" id="f-data" type="date"></div>
           <div class="form-group"><label class="form-label">Quantidade total *</label><input class="form-input" id="f-qtd" type="number" min="1" placeholder="Ex: 120"></div>
-          <div class="form-group"><label class="form-label">Colaborador *</label><input class="form-input" id="f-colab" type="text" placeholder="Digite o nome do colaborador" list="colab-datalist" autocomplete="off"><datalist id="colab-datalist"></datalist></div>
+          <div class="form-group"><label class="form-label">Colaborador *</label><select class="form-input" id="f-colab"><option value="">Selecione o colaborador...</option></select></div>
           <div class="time-row">
             <div class="form-group"><label class="form-label">Hora inicial *</label><input class="form-input" id="f-ti" type="time" step="1" onchange="validarHorarios()"></div>
             <div class="form-group"><label class="form-label">Hora final *</label><input class="form-input" id="f-tf" type="time" step="1" onchange="validarHorarios()"></div>
           </div>
           <div id="horario-error" style="color:var(--red-text);font-size:12px;margin-bottom:10px;display:none;padding:8px 10px;background:var(--red-light);border-radius:var(--radius-sm);"><i class="ti ti-clock-x"></i> Hora final deve ser maior que a inicial.</div>
-          <button class="btn-save" id="btn-salvar" onclick="salvarPedido()">Salvar</button>
+          <input type="hidden" id="f-edit-id" value="">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <button class="btn-save" id="btn-salvar" onclick="salvarPedido()">Salvar</button>
+            <button style="padding:10px;border-radius:var(--radius-md);border:1px solid var(--border-md);background:none;cursor:pointer;font-size:13px;color:var(--text-secondary);" onclick="cancelarEdicaoPedido()"><i class="ti ti-x"></i> Cancelar</button>
+          </div>
           <div class="form-error" id="form-error"></div>
         </div>
         <div class="card">
@@ -405,10 +409,12 @@
           <select id="hist-ano" onchange="buildHistMesOptions();renderHistorico()" style="margin-left:auto;"><option value="all">Todos os anos</option><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option></select>
           <select id="hist-mes" onchange="renderHistorico()"><option value="all">Todos os meses</option></select>
           <input id="hist-colab-filter" type="text" placeholder="Filtrar colaborador..." oninput="renderHistorico()">
+          <button class="btn-export excel" onclick="exportarPedidosExcel()" title="Exportar Excel"><i class="ti ti-file-spreadsheet"></i></button>
+          <button class="btn-export pdf" onclick="exportarPedidosPDF()" title="Exportar PDF"><i class="ti ti-file-type-pdf"></i></button>
         </div>
         <div class="table-wrap">
           <table class="hist-table">
-            <thead><tr><th style="width:130px;">Movimento</th><th style="width:90px;">Data</th><th style="width:80px;">Qtd.</th><th style="width:160px;">Colaborador</th><th style="width:80px;">T. Inicial</th><th style="width:80px;">T. Final</th><th style="width:75px;">Duração</th><th style="width:60px;"></th></tr></thead>
+            <thead><tr><th style="width:130px;">Movimento</th><th style="width:90px;">Data</th><th style="width:80px;">Qtd.</th><th style="width:160px;">Colaborador</th><th style="width:80px;">T. Inicial</th><th style="width:80px;">T. Final</th><th style="width:75px;">Duração</th><th style="width:80px;"></th></tr></thead>
             <tbody id="hist-body"><tr><td colspan="8" class="empty-state"><div class="spinner"></div> Carregando...</td></tr></tbody>
           </table>
         </div>
@@ -534,6 +540,20 @@
           </select>
         </div>
       </div>
+
+      <!-- RANKING GERAL DA EQUIPE -->
+      <div class="card" style="margin-bottom:18px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+          <div class="card-label" style="margin:0;">Ranking geral da equipe</div>
+          <select id="rk-metrica" onchange="renderRankingGeral()" style="font-size:12px;padding:5px 9px;border-radius:var(--radius-md);border:1px solid var(--border-md);background:var(--bg-primary);color:var(--text-primary);">
+            <option value="qtd">Por produtos</option>
+            <option value="pedidos">Por pedidos</option>
+            <option value="tempo">Por tempo médio (menor é melhor)</option>
+          </select>
+        </div>
+        <div id="rk-geral-list" style="display:flex;flex-direction:column;gap:2px;"></div>
+      </div>
+
       <div id="ci-empty" class="empty-state" style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg);padding:40px;">Selecione um colaborador para ver o comparativo</div>
       <div id="ci-content" style="display:none;">
         <div class="chart-row" style="align-items:start;">
@@ -581,10 +601,17 @@
         <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-trending-up" style="color:#EF9F27;"></i></div><div class="kpi-label">Motivo mais frequente</div><div class="kpi-value" id="erros-motivo-freq" style="font-size:14px;">—</div></div>
       </div>
 
+      <!-- EVOLUÇÃO MENSAL -->
+      <div class="card" style="margin-bottom:18px;">
+        <div class="card-label">Evolução de erros por mês</div>
+        <div id="erros-linha-empty" class="empty-state" style="display:none;">Sem dados suficientes ainda</div>
+        <div style="position:relative;height:200px;"><canvas id="erros-linha"></canvas></div>
+      </div>
+
       <div style="display:grid;grid-template-columns:380px 1fr 280px;gap:16px;margin-bottom:18px;">
         <!-- FORMULÁRIO -->
         <div class="card">
-          <div class="card-label"><i class="ti ti-plus"></i> Registrar erro</div>
+          <div class="card-label" id="erro-form-title"><i class="ti ti-plus"></i> Registrar erro</div>
           <div id="erro-msg-ok" class="msg msg-ok"><i class="ti ti-circle-check"></i> Erro registrado!</div>
           <div id="erro-msg-err" class="msg msg-err"><i class="ti ti-alert-circle"></i><span id="erro-msg-err-txt"></span></div>
 
@@ -623,9 +650,13 @@
             <input class="form-input" id="e-outro" type="text" placeholder="Descreva o erro...">
           </div>
           <div class="form-error" id="erro-form-error"></div>
-          <button class="btn-save" id="btn-salvar-erro" onclick="salvarErro()">
-            <i class="ti ti-device-floppy"></i> Registro
-          </button>
+          <input type="hidden" id="e-edit-id" value="">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <button class="btn-save" id="btn-salvar-erro" onclick="salvarErro()">
+              <i class="ti ti-device-floppy"></i> Registro
+            </button>
+            <button style="padding:10px;border-radius:var(--radius-md);border:1px solid var(--border-md);background:none;cursor:pointer;font-size:13px;color:var(--text-secondary);" onclick="cancelarEdicaoErro()"><i class="ti ti-x"></i> Cancelar</button>
+          </div>
         </div>
 
         <!-- GRÁFICO DE PIZZA -->
@@ -664,6 +695,8 @@
             <option value="Registro sem envio físico">Sem envio físico</option>
             <option value="Outro">Outro</option>
           </select>
+          <button class="btn-export excel" onclick="exportarErrosExcel()" title="Exportar Excel"><i class="ti ti-file-spreadsheet"></i></button>
+          <button class="btn-export pdf" onclick="exportarErrosPDF()" title="Exportar PDF"><i class="ti ti-file-type-pdf"></i></button>
         </div>
         <div class="table-wrap">
           <table class="hist-table">
@@ -675,7 +708,7 @@
                 <th style="width:180px;">Produto</th>
                 <th style="width:110px;">Cód. Barras</th>
                 <th>Motivo</th>
-                <th style="width:50px;"></th>
+                <th style="width:80px;"></th>
               </tr>
             </thead>
             <tbody id="erros-body">
@@ -702,7 +735,7 @@
       <div style="display:grid;grid-template-columns:340px 1fr;gap:16px;margin-bottom:18px;">
         <!-- FORMULÁRIO -->
         <div class="card">
-          <div class="card-label"><i class="ti ti-plus"></i> Direcionar pedido</div>
+          <div class="card-label" id="direc-form-title"><i class="ti ti-plus"></i> Direcionar pedido</div>
           <div id="direc-msg-ok" class="msg msg-ok"><i class="ti ti-circle-check"></i> Pedido direcionado!</div>
           <div id="direc-msg-err" class="msg msg-err"><i class="ti ti-alert-circle"></i><span id="direc-msg-err-txt"></span></div>
 
@@ -725,9 +758,13 @@
             <input class="form-input" id="direc-qtd" type="number" min="1" placeholder="Ex: 120">
           </div>
           <div class="form-error" id="direc-form-error"></div>
-          <button class="btn-save" id="btn-salvar-direc" onclick="salvarDirecionamento()">
-            <i class="ti ti-device-floppy"></i> Cadastrar
-          </button>
+          <input type="hidden" id="direc-edit-id" value="">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <button class="btn-save" id="btn-salvar-direc" onclick="salvarDirecionamento()">
+              <i class="ti ti-device-floppy"></i> Cadastrar
+            </button>
+            <button style="padding:10px;border-radius:var(--radius-md);border:1px solid var(--border-md);background:none;cursor:pointer;font-size:13px;color:var(--text-secondary);" onclick="cancelarEdicaoDirecionamento()"><i class="ti ti-x"></i> Cancelar</button>
+          </div>
         </div>
 
         <!-- BALANCEAMENTO -->
@@ -761,6 +798,8 @@
         <div class="hist-filters">
           <span class="hist-label">Pedidos direcionados <span id="direc-hist-count" class="hist-count"></span></span>
           <input type="date" id="direc-data-filtro" onchange="carregarDirecionamentos()">
+          <button class="btn-export excel" onclick="exportarDirecionamentosExcel()" title="Exportar Excel"><i class="ti ti-file-spreadsheet"></i></button>
+          <button class="btn-export pdf" onclick="exportarDirecionamentosPDF()" title="Exportar PDF"><i class="ti ti-file-type-pdf"></i></button>
         </div>
         <div class="table-wrap">
           <table class="hist-table">
@@ -770,7 +809,7 @@
                 <th>Colaborador</th>
                 <th style="width:140px;">Qtd. produtos</th>
                 <th style="width:90px;">Hora</th>
-                <th style="width:50px;"></th>
+                <th style="width:80px;"></th>
               </tr>
             </thead>
             <tbody id="direc-body">
@@ -838,9 +877,11 @@ function buildAnaliseMesOptions(side){const ano=document.getElementById(`ano-${s
 function validarHorarios(){const ti=document.getElementById('f-ti').value,tf=document.getElementById('f-tf').value;const e=document.getElementById('horario-error');if(ti&&tf&&toSec(tf)<=toSec(ti)){document.getElementById('f-tf').classList.add('error');e.style.display='block';return false;}document.getElementById('f-tf').classList.remove('error');e.style.display='none';return true;}
 
 function atualizarDatalist(){
-  const dl=document.getElementById('colab-datalist');if(!dl)return;
+  const sel=document.getElementById('f-colab');if(!sel)return;
+  const cur=sel.value;
   const ativos=allColabs.filter(c=>c.status==='ativo'||!c.status);
-  dl.innerHTML=ativos.map(c=>`<option value="${c.nome}">`).join('');
+  sel.innerHTML='<option value="">Selecione o colaborador...</option>'+ativos.map(c=>`<option value="${c.nome}">${c.nome}</option>`).join('');
+  if(cur&&[...sel.options].some(o=>o.value===cur))sel.value=cur;
   popularSelectDirecColab();
 }
 
@@ -887,16 +928,20 @@ async function registrarLog(acao,detalhe){
   try{await sb.from('log_atividades').insert({acao,detalhe,usuario:'Jean Menezes'});}catch(e){console.error(e);}
 }
 
-function renderHistorico(){
+function pedidosFiltradosHistorico(){
   const ano=document.getElementById('hist-ano').value;
   const mes=document.getElementById('hist-mes').value;
   const cf=(document.getElementById('hist-colab-filter').value||'').toLowerCase();
-  const dados=allPedidos.filter(p=>{
+  return allPedidos.filter(p=>{
     if(ano!=='all'&&!(p.data||'').startsWith(ano))return false;
     if(mes!=='all'&&!(p.data||'').startsWith(mes))return false;
     if(cf&&!(p.colab||'').toLowerCase().includes(cf))return false;
     return true;
   });
+}
+
+function renderHistorico(){
+  const dados=pedidosFiltradosHistorico();
   document.getElementById('hist-count').textContent=`(${dados.length} registros)`;
   const body=document.getElementById('hist-body');
   if(!dados.length){body.innerHTML='<tr><td colspan="8" class="empty-state">Nenhum registro encontrado</td></tr>';updateResumo();return;}
@@ -910,10 +955,30 @@ function renderHistorico(){
       <td style="display:flex;align-items:center;gap:6px;padding:9px 11px;"><div class="rank-av" style="background:${FILL6[ci]};color:${STROKE6[ci]};width:22px;height:22px;font-size:9px;">${getInit(p.colab)}</div><span class="nome-link" onclick="abrirPerfil('${p.colab}')">${p.colab||'—'}</span></td>
       <td class="mono">${p.ti||'—'}</td><td class="mono">${p.tf||'—'}</td>
       <td>${dur} min</td>
-      <td><button class="btn-del" onclick="deletarPedido('${p.id}')"><i class="ti ti-trash"></i></button></td>
+      <td><button class="btn-edit" onclick="editarPedido('${p.id}')"><i class="ti ti-pencil"></i></button><button class="btn-del" onclick="deletarPedido('${p.id}')"><i class="ti ti-trash"></i></button></td>
     </tr>`;
   }).join('');
   updateResumo();
+}
+
+function exportarPedidosExcel(){
+  const dados=pedidosFiltradosHistorico();
+  if(!dados.length){alert('Nenhum dado para exportar.');return;}
+  const linhas=dados.map(p=>({'Movimento':p.mov||'','Data':(p.data||'').split('-').reverse().join('/'),'Qtd. Produtos':p.qtd||0,'Colaborador':p.colab||'','Hora Inicial':p.ti||'','Hora Final':p.tf||'','Duração (min)':durMin(p.ti,p.tf)}));
+  const ws=XLSX.utils.json_to_sheet(linhas);const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Pedidos');
+  XLSX.writeFile(wb,`SAP_Pedidos_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+function exportarPedidosPDF(){
+  const dados=pedidosFiltradosHistorico();
+  if(!dados.length){alert('Nenhum dado para exportar.');return;}
+  const{jsPDF}=window.jspdf;const pdf=new jsPDF();
+  pdf.setFontSize(16);pdf.setTextColor(29,158,117);pdf.text('SAP — Histórico de Pedidos',14,18);
+  pdf.setFontSize(10);pdf.setTextColor(107,114,128);
+  pdf.text(`${dados.length} registro(s) | Gerado: ${new Date().toLocaleDateString('pt-BR')}`,14,26);
+  pdf.autoTable({startY:34,head:[['Movimento','Data','Qtd.','Colaborador','T.Inicial','T.Final','Duração']],body:dados.map(p=>[''+(p.mov||''),(p.data||'').split('-').reverse().join('/'),p.qtd||0,p.colab||'',p.ti||'',p.tf||'',durMin(p.ti,p.tf)+' min']),styles:{fontSize:9},headStyles:{fillColor:[29,158,117],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[249,250,251]}});
+  pdf.save(`SAP_Pedidos_${new Date().toISOString().slice(0,10)}.pdf`);
 }
 
 function updateResumo(){
@@ -931,26 +996,63 @@ async function salvarPedido(){
   const colab=document.getElementById('f-colab').value.trim();
   const ti=document.getElementById('f-ti').value;
   const tf=document.getElementById('f-tf').value;
+  const editId=document.getElementById('f-edit-id').value;
   const err=document.getElementById('form-error'),msgOk=document.getElementById('msg-ok'),msgErr=document.getElementById('msg-err');
   err.style.display=msgOk.style.display=msgErr.style.display='none';
   if(!mov||!data||!qtd||!colab||!ti||!tf){err.textContent='Preencha todos os campos.';err.style.display='block';return;}
   if(!validarHorarios()){err.textContent='Corrija o horário.';err.style.display='block';return;}
-  if(allPedidos.find(p=>p.mov&&p.mov.toLowerCase()===mov.toLowerCase())){err.textContent='Número de movimento já cadastrado! Verifique o campo acima.';err.style.display='block';document.getElementById('f-mov').focus();return;}
+  if(allPedidos.find(p=>p.mov&&p.mov.toLowerCase()===mov.toLowerCase()&&p.id!==editId)){err.textContent='Número de movimento já cadastrado! Verifique o campo acima.';err.style.display='block';document.getElementById('f-mov').focus();return;}
   const btn=document.getElementById('btn-salvar');
   btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:14px;height:14px;border-width:2px;"></div> Salvando...';
   try{
-    const{error}=await sb.from('pedidos').insert({mov,data,qtd,colab,ti,tf});
+    let error;
+    if(editId){
+      ({error}=await sb.from('pedidos').update({mov,data,qtd,colab,ti,tf}).eq('id',editId));
+    }else{
+      ({error}=await sb.from('pedidos').insert({mov,data,qtd,colab,ti,tf}));
+    }
     if(error)throw error;
-    await registrarLog('cadastrou',`Pedido ${mov} — ${colab} — ${qtd} produtos`);
-    ['f-mov','f-data','f-qtd','f-colab','f-ti','f-tf'].forEach(id=>document.getElementById(id).value='');
+    await registrarLog(editId?'editou':'cadastrou',`Pedido ${mov} — ${colab} — ${qtd} produtos`);
+    cancelarEdicaoPedido();
     msgOk.style.display='flex';setTimeout(()=>msgOk.style.display='none',4000);
     await carregarDados();
   }catch(e){
     document.getElementById('msg-err-txt').textContent=e?.message||e?.details||e?.hint||JSON.stringify(e)||'Erro ao salvar';
     msgErr.style.display='flex';
   }finally{
-    btn.disabled=false;btn.innerHTML='Salvar';
+    btn.disabled=false;btn.innerHTML=document.getElementById('f-edit-id').value?'<i class="ti ti-device-floppy"></i> Atualizar':'Salvar';
   }
+}
+
+function editarPedido(id){
+  const p=allPedidos.find(x=>x.id===id);if(!p)return;
+  document.getElementById('f-mov').value=p.mov||'';
+  document.getElementById('f-data').value=p.data||'';
+  document.getElementById('f-qtd').value=p.qtd||'';
+  const selColab=document.getElementById('f-colab');
+  if(p.colab&&![...selColab.options].some(o=>o.value===p.colab)){
+    const opt=document.createElement('option');
+    opt.value=p.colab;opt.textContent=p.colab+' (inativo)';opt.dataset.temp='1';
+    selColab.appendChild(opt);
+  }
+  selColab.value=p.colab||'';
+  document.getElementById('f-ti').value=p.ti||'';
+  document.getElementById('f-tf').value=p.tf||'';
+  document.getElementById('f-edit-id').value=id;
+  document.getElementById('pedido-form-title').innerHTML='<i class="ti ti-pencil"></i> Editando pedido';
+  document.getElementById('btn-salvar').innerHTML='<i class="ti ti-device-floppy"></i> Atualizar';
+  document.getElementById('mov-status').innerHTML='';
+  document.getElementById('dup-alert').style.display='none';
+  document.getElementById('form-error').style.display='none';
+}
+
+function cancelarEdicaoPedido(){
+  ['f-mov','f-data','f-qtd','f-colab','f-ti','f-tf','f-edit-id'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-colab').querySelectorAll('option[data-temp="1"]').forEach(o=>o.remove());
+  document.getElementById('pedido-form-title').innerHTML='<i class="ti ti-plus"></i> Novo registro';
+  document.getElementById('btn-salvar').innerHTML='Salvar';
+  document.getElementById('mov-status').innerHTML='';
+  document.getElementById('dup-alert').style.display='none';
 }
 
 async function deletarPedido(id){
@@ -1294,13 +1396,17 @@ window.showTab=function(tab){
   });
   if(tab==='dash')renderDash();
   if(tab==='analise')renderAnalise();
-  if(tab==='comparativo'){atualizarSelectCI();renderComparativoIndividual();}
+  if(tab==='comparativo'){atualizarSelectCI();renderComparativoIndividual();renderRankingGeral();}
   if(tab==='erros'){carregarErros();}
   if(tab==='direcionamento'){carregarDirecionamentos();}
 };
 
 window.validarHorarios=validarHorarios;
 window.salvarPedido=salvarPedido;
+window.editarPedido=editarPedido;
+window.cancelarEdicaoPedido=cancelarEdicaoPedido;
+window.exportarPedidosExcel=exportarPedidosExcel;
+window.exportarPedidosPDF=exportarPedidosPDF;
 window.deletarPedido=deletarPedido;
 window.salvarColaborador=salvarColaborador;
 window.cancelarEdicaoColab=cancelarEdicaoColab;
@@ -1431,6 +1537,30 @@ function atualizarSelectCI(){
   if(curA)renderComparativoIndividual();
 }
 
+function renderRankingGeral(){
+  const el=document.getElementById('rk-geral-list');if(!el)return;
+  const metrica=document.getElementById('rk-metrica')?.value||'qtd';
+  const colabs=agruparColabs(allPedidos).map(c=>({...c,tempoMedio:c.tempos.length?Math.round(c.tempos.reduce((a,b)=>a+b,0)/c.tempos.length):0}));
+  if(!colabs.length){el.innerHTML='<div class="empty-state">Nenhum dado</div>';return;}
+  const ordenados=[...colabs].sort((a,b)=>{
+    if(metrica==='tempo'){
+      if(!a.tempoMedio&&!b.tempoMedio)return 0;
+      if(!a.tempoMedio)return 1;
+      if(!b.tempoMedio)return -1;
+      return a.tempoMedio-b.tempoMedio;
+    }
+    if(metrica==='pedidos')return b.pedidos-a.pedidos;
+    return b.qtd-a.qtd;
+  });
+  const allCols=[...new Set(allPedidos.map(p=>p.colab).filter(Boolean))];
+  const medals=['🥇','🥈','🥉'];
+  el.innerHTML=ordenados.map((c,i)=>{
+    const ci=allCols.indexOf(c.nome)%6;
+    const val=metrica==='tempo'?(c.tempoMedio?c.tempoMedio+' min':'—'):metrica==='pedidos'?c.pedidos:c.qtd.toLocaleString('pt-BR');
+    return`<div class="rank-item"><div style="font-size:11px;color:var(--text-tertiary);width:22px;">${medals[i]||i+1}</div><div class="rank-av" style="background:${FILL6[ci]};color:${STROKE6[ci]};">${getInit(c.nome)}</div><div class="rank-name"><span class="nome-link" onclick="abrirPerfil('${c.nome}')">${c.nome}</span></div><div class="rank-val">${val}</div></div>`;
+  }).join('');
+}
+
 function dadosPerfilColab(nomeColab){
   const pedidosColab=allPedidos.filter(p=>p.colab===nomeColab);
   const colab=allColabs.find(c=>c.nome===nomeColab)||{nome:nomeColab,cargo:''};
@@ -1548,6 +1678,7 @@ function renderHeatmap(){
 /* ── ERROS OPERACIONAIS ── */
 let allErros=[];
 let errosPizzaInst=null;
+let errosLinhaInst=null;
 
 // Mostrar campo "Outro" quando selecionado
 document.addEventListener('change',function(e){
@@ -1571,6 +1702,7 @@ async function carregarErros(){
     renderErros();
     renderErrosKpis();
     renderErrosPizza();
+    renderErrosLinha();
     atualizarDatalistErros();
     renderErrosDashboard();
   }catch(e){
@@ -1587,6 +1719,7 @@ async function salvarErro(){
   const motivo=document.getElementById('e-motivo').value;
   const outro=document.getElementById('e-outro').value.trim();
   const motivoFinal=motivo==='Outro'?('Outro: '+outro):motivo;
+  const editId=document.getElementById('e-edit-id').value;
 
   const errEl=document.getElementById('erro-form-error');
   const msgOk=document.getElementById('erro-msg-ok');
@@ -1600,20 +1733,49 @@ async function salvarErro(){
   btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:14px;height:14px;border-width:2px;"></div> Salvando...';
 
   try{
-    const{error}=await sb.from('erros_operacionais').insert({mov,colab,data,produto,barcode,motivo:motivoFinal});
+    let error;
+    if(editId){
+      ({error}=await sb.from('erros_operacionais').update({mov,colab,data,produto,barcode,motivo:motivoFinal}).eq('id',editId));
+    }else{
+      ({error}=await sb.from('erros_operacionais').insert({mov,colab,data,produto,barcode,motivo:motivoFinal}));
+    }
     if(error)throw error;
-    await registrarLog('registrou erro',`Movimento ${mov} — ${colab} — ${motivoFinal}`);
-    ['e-mov','e-colab','e-data','e-produto','e-barcode'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('e-motivo').value='';
-    document.getElementById('e-outro-group').style.display='none';
+    await registrarLog(editId?'editou erro':'registrou erro',`Movimento ${mov} — ${colab} — ${motivoFinal}`);
+    cancelarEdicaoErro();
     msgOk.style.display='flex';setTimeout(()=>msgOk.style.display='none',4000);
     await carregarErros();
   }catch(e){
     document.getElementById('erro-msg-err-txt').textContent=e?.message||'Erro ao salvar';
     msgErr.style.display='flex';
   }finally{
-    btn.disabled=false;btn.innerHTML='<i class="ti ti-device-floppy"></i> Registro';
+    btn.disabled=false;btn.innerHTML=document.getElementById('e-edit-id').value?'<i class="ti ti-device-floppy"></i> Atualizar':'<i class="ti ti-device-floppy"></i> Registro';
   }
+}
+
+function editarErro(id){
+  const e=allErros.find(x=>x.id===id);if(!e)return;
+  document.getElementById('e-mov').value=e.mov||'';
+  document.getElementById('e-colab').value=e.colab||'';
+  document.getElementById('e-data').value=e.data||'';
+  document.getElementById('e-produto').value=e.produto||'';
+  document.getElementById('e-barcode').value=e.barcode||'';
+  const motivo=e.motivo||'';
+  const isOutro=motivo.startsWith('Outro');
+  document.getElementById('e-motivo').value=isOutro?'Outro':motivo;
+  document.getElementById('e-outro-group').style.display=isOutro?'block':'none';
+  document.getElementById('e-outro').value=isOutro?motivo.replace(/^Outro:\s*/,''):'';
+  document.getElementById('e-edit-id').value=id;
+  document.getElementById('erro-form-title').innerHTML='<i class="ti ti-pencil"></i> Editando erro';
+  document.getElementById('btn-salvar-erro').innerHTML='<i class="ti ti-device-floppy"></i> Atualizar';
+  document.getElementById('erro-form-error').style.display='none';
+}
+
+function cancelarEdicaoErro(){
+  ['e-mov','e-colab','e-data','e-produto','e-barcode','e-edit-id'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('e-motivo').value='';
+  document.getElementById('e-outro-group').style.display='none';
+  document.getElementById('erro-form-title').innerHTML='<i class="ti ti-plus"></i> Registrar erro';
+  document.getElementById('btn-salvar-erro').innerHTML='<i class="ti ti-device-floppy"></i> Registro';
 }
 
 async function deletarErro(id){
@@ -1625,10 +1787,17 @@ async function deletarErro(id){
   }catch(e){alert('Erro: '+e.message);}
 }
 
-function renderErros(){
+function errosFiltrados(){
   const filtroMes=document.getElementById('erros-filtro-mes')?.value||'all';
   const filtroMotivo=document.getElementById('erros-filtro-motivo')?.value||'all';
+  return allErros.filter(e=>{
+    if(filtroMes!=='all'&&!(e.data||'').startsWith(filtroMes))return false;
+    if(filtroMotivo!=='all'&&!(e.motivo||'').includes(filtroMotivo))return false;
+    return true;
+  });
+}
 
+function renderErros(){
   // Popular select de meses
   const selMes=document.getElementById('erros-filtro-mes');
   if(selMes){
@@ -1637,11 +1806,7 @@ function renderErros(){
     selMes.innerHTML='<option value="all">Todos os meses</option>'+meses.map(m=>{const[y,mo]=m.split('-');return`<option value="${m}"${m===cur?' selected':''}>${MESES[parseInt(mo)-1]} ${y}</option>`;}).join('');
   }
 
-  const dados=allErros.filter(e=>{
-    if(filtroMes!=='all'&&!(e.data||'').startsWith(filtroMes))return false;
-    if(filtroMotivo!=='all'&&!(e.motivo||'').includes(filtroMotivo))return false;
-    return true;
-  });
+  const dados=errosFiltrados();
 
   document.getElementById('erros-hist-count').textContent=`(${dados.length} registros)`;
   const body=document.getElementById('erros-body');
@@ -1656,8 +1821,28 @@ function renderErros(){
     <td><span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500;background:#FCEBEB;color:#A32D2D;">
       <i class="ti ti-alert-triangle"></i> ${e.motivo||'—'}
     </span></td>
-    <td><button class="btn-del" onclick="deletarErro('${e.id}')"><i class="ti ti-trash"></i></button></td>
+    <td><button class="btn-edit" onclick="editarErro('${e.id}')"><i class="ti ti-pencil"></i></button><button class="btn-del" onclick="deletarErro('${e.id}')"><i class="ti ti-trash"></i></button></td>
   </tr>`).join('');
+}
+
+function exportarErrosExcel(){
+  const dados=errosFiltrados();
+  if(!dados.length){alert('Nenhum dado para exportar.');return;}
+  const linhas=dados.map(e=>({'Movimento':e.mov||'','Data':(e.data||'').split('-').reverse().join('/'),'Colaborador':e.colab||'','Produto':e.produto||'','Código de Barras':e.barcode||'','Motivo':e.motivo||''}));
+  const ws=XLSX.utils.json_to_sheet(linhas);const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Erros');
+  XLSX.writeFile(wb,`SAP_Erros_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+function exportarErrosPDF(){
+  const dados=errosFiltrados();
+  if(!dados.length){alert('Nenhum dado para exportar.');return;}
+  const{jsPDF}=window.jspdf;const pdf=new jsPDF();
+  pdf.setFontSize(16);pdf.setTextColor(226,75,74);pdf.text('SAP — Erros Operacionais',14,18);
+  pdf.setFontSize(10);pdf.setTextColor(107,114,128);
+  pdf.text(`${dados.length} registro(s) | Gerado: ${new Date().toLocaleDateString('pt-BR')}`,14,26);
+  pdf.autoTable({startY:34,head:[['Movimento','Data','Colaborador','Produto','Cód. Barras','Motivo']],body:dados.map(e=>[''+(e.mov||''),(e.data||'').split('-').reverse().join('/'),e.colab||'',e.produto||'',e.barcode||'',e.motivo||'']),styles:{fontSize:8.5},headStyles:{fillColor:[226,75,74],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[249,250,251]}});
+  pdf.save(`SAP_Erros_${new Date().toISOString().slice(0,10)}.pdf`);
 }
 
 function renderErrosKpis(){
@@ -1742,7 +1927,25 @@ function renderErrosPizza(){
   }
 }
 
+function renderErrosLinha(){
+  const canvas=document.getElementById('erros-linha');if(!canvas)return;
+  const emptyEl=document.getElementById('erros-linha-empty');
+  const porMes={};
+  allErros.forEach(e=>{const m=(e.data||'').substring(0,7);if(!m)return;porMes[m]=(porMes[m]||0)+1;});
+  const meses=Object.keys(porMes).sort();
+  if(errosLinhaInst){errosLinhaInst.destroy();errosLinhaInst=null;}
+  if(!meses.length){canvas.style.display='none';emptyEl.style.display='block';return;}
+  canvas.style.display='block';emptyEl.style.display='none';
+  const labels=meses.map(m=>{const[y,mo]=m.split('-');return MESES[parseInt(mo)-1].slice(0,3)+'/'+y.slice(2);});
+  const vals=meses.map(m=>porMes[m]);
+  errosLinhaInst=new Chart(canvas,{type:'line',data:{labels,datasets:[{label:'Erros',data:vals,borderColor:'#E24B4A',backgroundColor:'rgba(226,75,74,.08)',borderWidth:2,tension:.3,pointRadius:3,pointBackgroundColor:'#E24B4A',fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.parsed.y} erro(s)`}}},scales:{y:{beginAtZero:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10},precision:0}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
+}
+
 window.salvarErro=salvarErro;
+window.editarErro=editarErro;
+window.cancelarEdicaoErro=cancelarEdicaoErro;
+window.exportarErrosExcel=exportarErrosExcel;
+window.exportarErrosPDF=exportarErrosPDF;
 window.deletarErro=deletarErro;
 window.renderErros=renderErros;
 
@@ -1822,8 +2025,26 @@ function renderDirecionamentoHistorico(){
   const countEl=document.getElementById('direc-hist-count');
   if(countEl)countEl.textContent=allDirecionamentos.length?`(${allDirecionamentos.length})`:'';
   body.innerHTML=allDirecionamentos.length
-    ?allDirecionamentos.map(d=>`<tr><td>${d.mov||'—'}</td><td>${d.colab}</td><td>${(d.qtd||0).toLocaleString('pt-BR')}</td><td>${d.criado_em?new Date(d.criado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'—'}</td><td><button class="btn-del" onclick="deletarDirecionamento('${d.id}')"><i class="ti ti-trash"></i></button></td></tr>`).join('')
+    ?allDirecionamentos.map(d=>`<tr><td>${d.mov||'—'}</td><td>${d.colab}</td><td>${(d.qtd||0).toLocaleString('pt-BR')}</td><td>${d.criado_em?new Date(d.criado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'—'}</td><td><button class="btn-edit" onclick="editarDirecionamento('${d.id}')"><i class="ti ti-pencil"></i></button><button class="btn-del" onclick="deletarDirecionamento('${d.id}')"><i class="ti ti-trash"></i></button></td></tr>`).join('')
     :'<tr><td colspan="5" class="empty-state">Nenhum pedido direcionado nesse dia</td></tr>';
+}
+
+function exportarDirecionamentosExcel(){
+  if(!allDirecionamentos.length){alert('Nenhum dado para exportar.');return;}
+  const linhas=allDirecionamentos.map(d=>({'Pedido':d.mov||'','Colaborador':d.colab||'','Qtd. Produtos':d.qtd||0,'Data':d.data||'','Hora':d.criado_em?new Date(d.criado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):''}));
+  const ws=XLSX.utils.json_to_sheet(linhas);const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Direcionamentos');
+  XLSX.writeFile(wb,`SAP_Direcionamentos_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+function exportarDirecionamentosPDF(){
+  if(!allDirecionamentos.length){alert('Nenhum dado para exportar.');return;}
+  const{jsPDF}=window.jspdf;const pdf=new jsPDF();
+  pdf.setFontSize(16);pdf.setTextColor(29,158,117);pdf.text('SAP — Direcionamento de Pedidos',14,18);
+  pdf.setFontSize(10);pdf.setTextColor(107,114,128);
+  pdf.text(`${allDirecionamentos.length} registro(s) | Gerado: ${new Date().toLocaleDateString('pt-BR')}`,14,26);
+  pdf.autoTable({startY:34,head:[['Pedido','Colaborador','Qtd.','Data','Hora']],body:allDirecionamentos.map(d=>[''+(d.mov||''),d.colab||'',d.qtd||0,(d.data||'').split('-').reverse().join('/'),d.criado_em?new Date(d.criado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'']),styles:{fontSize:9},headStyles:{fillColor:[29,158,117],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[249,250,251]}});
+  pdf.save(`SAP_Direcionamentos_${new Date().toISOString().slice(0,10)}.pdf`);
 }
 
 async function salvarDirecionamento(){
@@ -1831,6 +2052,7 @@ async function salvarDirecionamento(){
   const colab=document.getElementById('direc-colab').value;
   const mov=document.getElementById('direc-mov').value.trim();
   const qtd=parseInt(document.getElementById('direc-qtd').value,10);
+  const editId=document.getElementById('direc-edit-id').value;
   const errEl=document.getElementById('direc-form-error');
   const okMsg=document.getElementById('direc-msg-ok');
   const errMsg=document.getElementById('direc-msg-err');
@@ -1845,13 +2067,16 @@ async function salvarDirecionamento(){
   const btn=document.getElementById('btn-salvar-direc');
   btn.disabled=true;
   try{
-    const{error}=await sb.from('direcionamentos').insert({data,colab,mov:mov||null,qtd});
+    let error;
+    if(editId){
+      ({error}=await sb.from('direcionamentos').update({data,colab,mov:mov||null,qtd}).eq('id',editId));
+    }else{
+      ({error}=await sb.from('direcionamentos').insert({data,colab,mov:mov||null,qtd}));
+    }
     if(error)throw error;
     okMsg.style.display='flex';
     setTimeout(()=>{okMsg.style.display='none';},2500);
-    document.getElementById('direc-mov').value='';
-    document.getElementById('direc-qtd').value='';
-    document.getElementById('direc-colab').value='';
+    cancelarEdicaoDirecionamento();
     const filtro=document.getElementById('direc-data-filtro');
     if(filtro)filtro.value=data;
     irParaMesNoCalendario(data);
@@ -1863,6 +2088,27 @@ async function salvarDirecionamento(){
   }finally{
     btn.disabled=false;
   }
+}
+
+function editarDirecionamento(id){
+  const d=allDirecionamentos.find(x=>x.id===id);if(!d)return;
+  document.getElementById('direc-data-input').value=d.data||'';
+  document.getElementById('direc-colab').value=d.colab||'';
+  document.getElementById('direc-mov').value=d.mov||'';
+  document.getElementById('direc-qtd').value=d.qtd||'';
+  document.getElementById('direc-edit-id').value=id;
+  document.getElementById('direc-form-title').innerHTML='<i class="ti ti-pencil"></i> Editando direcionamento';
+  document.getElementById('btn-salvar-direc').innerHTML='<i class="ti ti-device-floppy"></i> Atualizar';
+  document.getElementById('direc-form-error').textContent='';
+}
+
+function cancelarEdicaoDirecionamento(){
+  document.getElementById('direc-mov').value='';
+  document.getElementById('direc-qtd').value='';
+  document.getElementById('direc-colab').value='';
+  document.getElementById('direc-edit-id').value='';
+  document.getElementById('direc-form-title').innerHTML='<i class="ti ti-plus"></i> Direcionar pedido';
+  document.getElementById('btn-salvar-direc').innerHTML='<i class="ti ti-device-floppy"></i> Cadastrar';
 }
 
 async function deletarDirecionamento(id){
