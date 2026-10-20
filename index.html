@@ -596,14 +596,14 @@
 
       <!-- KPIs -->
       <div class="kpi-grid" id="erros-kpis" style="margin-bottom:18px;">
-        <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-alert-triangle" style="color:#E24B4A;"></i></div><div class="kpi-label">Total de erros no mês</div><div class="kpi-value" id="erros-total-mes">—</div></div>
-        <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-calendar" style="color:#378ADD;"></i></div><div class="kpi-label">Total histórico</div><div class="kpi-value" id="erros-total-hist">—</div></div>
+        <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-alert-triangle" style="color:#E24B4A;"></i></div><div class="kpi-label" id="erros-total-mes-label">Total de erros no mês</div><div class="kpi-value" id="erros-total-mes">—</div></div>
+        <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-calendar" style="color:#378ADD;"></i></div><div class="kpi-label" id="erros-total-hist-label">Total histórico</div><div class="kpi-value" id="erros-total-hist">—</div></div>
         <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-trending-up" style="color:#EF9F27;"></i></div><div class="kpi-label">Motivo mais frequente</div><div class="kpi-value" id="erros-motivo-freq" style="font-size:14px;">—</div></div>
       </div>
 
       <!-- EVOLUÇÃO MENSAL -->
       <div class="card" style="margin-bottom:18px;">
-        <div class="card-label">Evolução de erros por mês</div>
+        <div class="card-label" id="erros-linha-titulo">Evolução de erros por mês</div>
         <div id="erros-linha-empty" class="empty-state" style="display:none;">Sem dados suficientes ainda</div>
         <div style="position:relative;height:200px;"><canvas id="erros-linha"></canvas></div>
       </div>
@@ -686,10 +686,10 @@
       <div class="card">
         <div class="hist-filters">
           <span class="hist-label">Histórico <span id="erros-hist-count" class="hist-count"></span></span>
-          <select id="erros-filtro-mes" onchange="renderErros()" style="margin-left:auto;">
+          <select id="erros-filtro-mes" onchange="aplicarFiltroErros()" style="margin-left:auto;">
             <option value="all">Todos os meses</option>
           </select>
-          <select id="erros-filtro-motivo" onchange="renderErros()">
+          <select id="erros-filtro-motivo" onchange="aplicarFiltroErros()">
             <option value="all">Todos os motivos</option>
             <option value="Enviado sem registro sistêmico">Sem registro sistêmico</option>
             <option value="Registro sem envio físico">Sem envio físico</option>
@@ -1845,16 +1845,34 @@ function exportarErrosPDF(){
   pdf.save(`SAP_Erros_${new Date().toISOString().slice(0,10)}.pdf`);
 }
 
+function aplicarFiltroErros(){
+  renderErros();
+  renderErrosKpis();
+  renderErrosPizza();
+  renderErrosLinha();
+}
+
 function renderErrosKpis(){
+  const filtroMes=document.getElementById('erros-filtro-mes')?.value||'all';
+  const filtroMotivo=document.getElementById('erros-filtro-motivo')?.value||'all';
+  const dados=errosFiltrados();
   const mesAtual=new Date().toISOString().substring(0,7);
-  const errosMes=allErros.filter(e=>(e.data||'').startsWith(mesAtual)).length;
+  const mesRef=filtroMes!=='all'?filtroMes:mesAtual;
+  const errosMes=dados.filter(e=>(e.data||'').startsWith(mesRef)).length;
   document.getElementById('erros-total-mes').textContent=errosMes;
-  document.getElementById('erros-total-hist').textContent=allErros.length;
+  document.getElementById('erros-total-hist').textContent=dados.length;
+  const lblMes=document.getElementById('erros-total-mes-label');
+  if(lblMes){
+    const[ry,rm]=mesRef.split('-');
+    lblMes.textContent=filtroMes!=='all'?`Total de erros em ${MESES[parseInt(rm)-1]} ${ry}`:'Total de erros no mês';
+  }
+  const lblHist=document.getElementById('erros-total-hist-label');
+  if(lblHist)lblHist.textContent=(filtroMes!=='all'||filtroMotivo!=='all')?'Total filtrado':'Total histórico';
 
   // Taxa de erros do mês x quantidade de produtos atendidos no mês
   const taxaEl=document.getElementById('erros-pizza-taxa');
   if(taxaEl){
-    const produtosMes=allPedidos.filter(p=>(p.data||'').startsWith(mesAtual)).reduce((s,p)=>s+(p.qtd||0),0);
+    const produtosMes=allPedidos.filter(p=>(p.data||'').startsWith(mesRef)).reduce((s,p)=>s+(p.qtd||0),0);
     if(produtosMes>0){
       const taxa=(errosMes/produtosMes*100);
       const casas=taxa>0&&taxa<0.01?4:2;
@@ -1866,14 +1884,15 @@ function renderErrosKpis(){
 
   // Motivo mais frequente
   const freq={};
-  allErros.forEach(e=>{const m=e.motivo||'Outro';freq[m]=(freq[m]||0)+1;});
+  dados.forEach(e=>{const m=e.motivo||'Outro';freq[m]=(freq[m]||0)+1;});
   const mais=Object.entries(freq).sort((a,b)=>b[1]-a[1])[0];
   document.getElementById('erros-motivo-freq').textContent=mais?mais[0].split(':')[0]:'—';
 }
 
 function renderErrosPizza(){
+  const dados=errosFiltrados();
   const freq={};
-  allErros.forEach(e=>{
+  dados.forEach(e=>{
     const m=(e.motivo||'Outro').startsWith('Outro')?'Outro':e.motivo;
     freq[m]=(freq[m]||0)+1;
   });
@@ -1881,7 +1900,13 @@ function renderErrosPizza(){
   const vals=Object.values(freq);
   const emptyEl=document.getElementById('erros-pizza-empty');
   const canvas=document.getElementById('erros-pizza');
-  if(!labels.length){emptyEl.style.display='block';canvas.style.display='none';return;}
+  if(!labels.length){
+    emptyEl.style.display='block';canvas.style.display='none';
+    if(errosPizzaInst){errosPizzaInst.destroy();errosPizzaInst=null;}
+    const lg=document.getElementById('erros-pizza-legend');if(lg)lg.innerHTML='';
+    const rk=document.getElementById('erros-colab-ranking');if(rk)rk.innerHTML='<div class="empty-state">Nenhum erro registrado</div>';
+    return;
+  }
   emptyEl.style.display='none';canvas.style.display='block';
 
   const cores=['#E24B4A','#378ADD','#EF9F27','#1D9E75','#7F77DD'];
@@ -1895,7 +1920,7 @@ function renderErrosPizza(){
   const rankingErrosEl=document.getElementById('erros-colab-ranking');
   if(rankingErrosEl){
     const porColab={};
-    allErros.forEach(e=>{
+    dados.forEach(e=>{
       const nome=e.colab||'Desconhecido';
       if(!porColab[nome])porColab[nome]=0;
       porColab[nome]++;
@@ -1930,14 +1955,29 @@ function renderErrosPizza(){
 function renderErrosLinha(){
   const canvas=document.getElementById('erros-linha');if(!canvas)return;
   const emptyEl=document.getElementById('erros-linha-empty');
-  const porMes={};
-  allErros.forEach(e=>{const m=(e.data||'').substring(0,7);if(!m)return;porMes[m]=(porMes[m]||0)+1;});
-  const meses=Object.keys(porMes).sort();
+  const tituloEl=document.getElementById('erros-linha-titulo');
+  const filtroMes=document.getElementById('erros-filtro-mes')?.value||'all';
+  const dados=errosFiltrados();
   if(errosLinhaInst){errosLinhaInst.destroy();errosLinhaInst=null;}
-  if(!meses.length){canvas.style.display='none';emptyEl.style.display='block';return;}
+  let labels,vals;
+  if(filtroMes!=='all'){
+    // mês escolhido: evolução dia a dia dentro do mês
+    const[y,mo]=filtroMes.split('-').map(Number);
+    const dias=new Date(y,mo,0).getDate();
+    vals=Array(dias).fill(0);
+    dados.forEach(e=>{const d=parseInt((e.data||'').substring(8,10),10);if(d>=1&&d<=dias)vals[d-1]++;});
+    labels=vals.map((_,i)=>String(i+1));
+    if(tituloEl)tituloEl.textContent=`Evolução de erros por dia — ${MESES[mo-1]} ${y}`;
+  }else{
+    const porMes={};
+    dados.forEach(e=>{const m=(e.data||'').substring(0,7);if(!m)return;porMes[m]=(porMes[m]||0)+1;});
+    const meses=Object.keys(porMes).sort();
+    labels=meses.map(m=>{const[y,mo]=m.split('-');return MESES[parseInt(mo)-1].slice(0,3)+'/'+y.slice(2);});
+    vals=meses.map(m=>porMes[m]);
+    if(tituloEl)tituloEl.textContent='Evolução de erros por mês';
+  }
+  if(!dados.length){canvas.style.display='none';emptyEl.style.display='block';return;}
   canvas.style.display='block';emptyEl.style.display='none';
-  const labels=meses.map(m=>{const[y,mo]=m.split('-');return MESES[parseInt(mo)-1].slice(0,3)+'/'+y.slice(2);});
-  const vals=meses.map(m=>porMes[m]);
   errosLinhaInst=new Chart(canvas,{type:'line',data:{labels,datasets:[{label:'Erros',data:vals,borderColor:'#E24B4A',backgroundColor:'rgba(226,75,74,.08)',borderWidth:2,tension:.3,pointRadius:3,pointBackgroundColor:'#E24B4A',fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.parsed.y} erro(s)`}}},scales:{y:{beginAtZero:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10},precision:0}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
 }
 
