@@ -2437,9 +2437,15 @@ window.verificarMovimento=verificarMovimento;
 /* ── PEDIDOS DA SEMANA (lista diária por ponto de venda, segunda a sábado) ── */
 const DIAS_SEMANA=['Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 const DIAS_LONGO=['Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
-const PDVS_PADRAO=['BELEM LOJA 459','BELEM LOJA 262','BELEM Q. 07','BELEM Q. 103','MANAUS LOJA 90','MANAUS Q. 758','MANAUS AMAZONAS Q. A39','GOIANIA LOJA 438','GOIANIA Q.04','GOIANIA Q.10','GOIANIA Q.P13','GOIANIA SHOPP LOJA 217','GOIANIA SHOPP Q. T18','NATAL LOJA 378','NATAL MIDWAY','BELA VISTA LOJA','BELA VISTA QUIOSQUE'];
+// pontos de venda de cada dia, conforme a folha de papel (0 = segunda ... 5 = sábado)
+const PDVS_POR_DIA=[
+  ['BELEM LOJA 459','BELEM LOJA 262','BELEM Q. 07','BELEM Q. 103','MANAUS LOJA 90','MANAUS Q. 758','MANAUS AMAZONAS Q. A39','GOIANIA LOJA 438','GOIANIA Q.04','GOIANIA Q.10','GOIANIA Q.P13','GOIANIA SHOPP LOJA 217','GOIANIA SHOPP Q. T18','NATAL LOJA 378','NATAL MIDWAY','BELA VISTA LOJA','BELA VISTA QUIOSQUE'],
+  ['FORTALEZA LOJA 617','FORTALEZA Q. 160','FORTALEZA RIOMAR LOJA 1173','FORTALEZA LOJA 2062','ARACAJU LOJA 143 (PRINCIPAL)','ARACAJU Q.202','ARACAJU Q.50','ARACAJU Q.25 (PRINCIPAL)','SALVADOR MEGA STORE','SALVADOR MINI MEGA','SALVADOR SHOPP Q.107','SALVADOR SHOPP Q.122','SALVADOR SHOPP Q112','SALVADOR SHOPP LOJA 2074A'],
+  [],[],[],[]
+];
 let allSemana=[],semanaIni=null,semDia=null,semanaHash=null,semanaReq=0;
-let pdvsConhecidos=new Set(),pdvsCarregados=false;
+// pontos extras (fora da lista do dia) já usados no sistema, separados por dia da semana
+let extrasPdv=[new Set(),new Set(),new Set(),new Set(),new Set(),new Set()],pdvsCarregados=false;
 let semLinhas=[],semDirty=new Set(),semLinhaNova=false,semMsgTimer=null;
 
 function escSem(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -2481,15 +2487,28 @@ function semOpcoesColab(ativos,sel){
   return '<option value="">Selecione...</option>'+lista.map(n=>`<option value="${escSem(n)}"${n===sel?' selected':''}>${escSem(n)}${ativos.includes(n)||n.includes(' / ')?'':' (inativo)'}</option>`).join('');
 }
 
-// pontos de venda da lista: os padrões da folha + os que já foram usados no sistema
-function listaPdvs(){
-  const vistos=new Set(PDVS_PADRAO.map(n=>n.toLowerCase()));
+// pontos de venda do dia: os da folha daquele dia + os extras que já foram usados nesse dia da semana
+function listaPdvs(dia){
+  const d=dia==null?semDia:dia;
+  const base=PDVS_POR_DIA[d]||[];
+  const vistos=new Set(base.map(n=>n.toLowerCase()));
   const extras=[];
-  [...pdvsConhecidos].sort((a,b)=>a.localeCompare(b,'pt-BR')).forEach(n=>{
+  [...(extrasPdv[d]||[])].sort((a,b)=>a.localeCompare(b,'pt-BR')).forEach(n=>{
     const k=String(n).trim().toLowerCase();
     if(k&&!vistos.has(k)){vistos.add(k);extras.push(String(n).trim());}
   });
-  return PDVS_PADRAO.concat(extras);
+  return base.concat(extras);
+}
+// índice do dia (0 = segunda ... 5 = sábado) de uma data AAAA-MM-DD; -1 se não for segunda a sábado
+function diaIndiceDaData(iso){
+  const[y,m,d]=String(iso||'').split('-').map(Number);
+  const dow=new Date(y,m-1,d).getDay();
+  return dow>=1&&dow<=6?dow-1:-1;
+}
+function lembrarPdv(pdv,iso){
+  const di=diaIndiceDaData(iso),nome=String(pdv||'').trim();
+  if(di<0||!nome)return;
+  if(!(PDVS_POR_DIA[di]||[]).some(n=>n.toLowerCase()===nome.toLowerCase()))extrasPdv[di].add(nome);
 }
 
 function montarLinhasSemana(iso){
@@ -2554,13 +2573,13 @@ async function carregarSemana(forcar){
     aviso.style.display='none';
     if(!pdvsCarregados){
       pdvsCarregados=true;
-      sb.from('pedidos_semana').select('pdv').order('criado_em',{ascending:false}).limit(1000).then(r=>{
-        (r&&r.data||[]).forEach(x=>{if(x.pdv)pdvsConhecidos.add(x.pdv);});
+      sb.from('pedidos_semana').select('pdv,data').order('criado_em',{ascending:false}).limit(2000).then(r=>{
+        (r&&r.data||[]).forEach(x=>lembrarPdv(x.pdv,x.data));
         if(!semFocoNaFolha()&&semDirty.size===0)renderSemana();
       });
     }
     const novo=data||[];
-    novo.forEach(p=>{if(p.pdv)pdvsConhecidos.add(p.pdv);});
+    novo.forEach(p=>lembrarPdv(p.pdv,p.data));
     const hash=ini+'|'+JSON.stringify(novo)+'|'+JSON.stringify(colabsAtivosSemana())+'|'+JSON.stringify(listaPdvs());
     if(!forcar&&hash===semanaHash)return;
     if(!forcar&&semFocoNaFolha())return; // não interrompe quem está digitando
@@ -2622,6 +2641,8 @@ function renderSemana(){
     </tr>`;
   }).join('');
 
+  if(!semLinhas.length)document.getElementById('sem-body').innerHTML='<tr><td colspan="5" class="empty-state">Nenhum ponto de venda cadastrado para '+DIAS_LONGO[semDia]+'. Use "Adicionar outro ponto" abaixo.</td></tr>';
+
   semLinhas.forEach((l,i)=>{
     const g=guardados[semChave(l)];if(!g)return;
     if(l.novo)semSetVal('sem-n-'+i,g.n);
@@ -2682,7 +2703,7 @@ async function salvarLinhaSemana(i){
     }
     if(error)throw error;
     await registrarLog(l.rec?'editou pedido da semana':'cadastrou pedido da semana',`${pdv} — ${colab} — ${qtd} itens — ${fmtDiaMes(diasDaSemana()[semDia])}`,USUARIO_EMAIL);
-    pdvsConhecidos.add(pdv);
+    lembrarPdv(pdv,iso);
     semDirty.delete(i);
     if(l.novo)semLinhaNova=false;
     semMsg('ok',`${pdv}: salvo!`);
