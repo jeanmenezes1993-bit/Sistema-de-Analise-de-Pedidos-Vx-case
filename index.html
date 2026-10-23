@@ -37,6 +37,17 @@
     .user-av{width:30px;height:30px;border-radius:50%;background:rgba(29,158,117,.25);border:1.5px solid rgba(29,158,117,.5);color:#5DCAA5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
     .user-name{font-size:12px;color:rgba(255,255,255,0.75);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .main{margin-left:var(--sidebar-w);flex:1;min-width:0;padding:24px;}
+    /* barra lateral recolhível (só ícones) */
+    .sidebar,.main{transition:width .2s ease,margin-left .2s ease;}
+    .sb-toggle{margin-left:auto;background:rgba(255,255,255,.07);border:none;color:rgba(255,255,255,.7);width:28px;height:28px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+    .sb-toggle:hover{background:rgba(255,255,255,.14);color:#fff;}
+    body.sb-recolhida{--sidebar-w:64px;}
+    body.sb-recolhida .sidebar-textos,body.sb-recolhida .nav-section-label,body.sb-recolhida .db-label,body.sb-recolhida .rt-badge,body.sb-recolhida .user-name,body.sb-recolhida .user-row .ti-logout{display:none !important;}
+    body.sb-recolhida .sidebar-brand{padding:0 0 14px;justify-content:center;}
+    body.sb-recolhida .sb-toggle{margin-left:0;}
+    body.sb-recolhida .nav-btn{justify-content:center;gap:0;padding:11px 0;font-size:0;}
+    body.sb-recolhida .nav-btn i{font-size:19px;}
+    body.sb-recolhida .db-row,body.sb-recolhida .user-row{justify-content:center;padding-left:0;padding-right:0;}
     .screen{display:none;} .screen.active{display:block;}
     .top-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
     .page-title{font-size:18px;font-weight:600;} .page-sub{font-size:13px;color:var(--text-secondary);margin-top:2px;}
@@ -290,7 +301,8 @@
 <div class="app" id="app-screen" style="display:none;">
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div><div class="sidebar-name">Análise de Envio</div><div class="sidebar-sub">Estoque Geral Vx case</div></div>
+      <div class="sidebar-textos"><div class="sidebar-name">Análise de Envio</div><div class="sidebar-sub">Estoque Geral Vx case</div></div>
+      <button class="sb-toggle" id="sb-toggle" onclick="alternarSidebar()" title="Recolher menu"><i class="ti ti-chevrons-left"></i></button>
     </div>
     <nav class="nav-section">
       <div class="nav-section-label" id="nav-label-principal">Principal</div>
@@ -2942,7 +2954,7 @@ async function limparLinhaSemana(i){
    Celular/tablet (atalho na tela inicial) guardam a página antiga na memória. Aqui o sistema confere se há
    versão nova: ao abrir, recarrega sozinho; ao voltar para o app, recarrega se estiver na folha da semana
    sem nada em preenchimento; nos demais casos mostra o aviso "Atualizar". */
-const APP_VERSAO='202610231513';
+const APP_VERSAO='202610231516';
 let appVersaoNova=null;
 function atualizarAgora(){
   const base=location.href.split('#')[0].split('?')[0];
@@ -2968,6 +2980,27 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('pageshow',e=>{if(e.persisted)verificarNovaVersao('retorno');});
 setInterval(()=>{if(document.visibilityState==='visible')verificarNovaVersao('periodico');},300000);
 verificarNovaVersao('load');
+
+/* ── BARRA LATERAL RECOLHÍVEL ── */
+function aplicarSidebar(recolhida){
+  document.body.classList.toggle('sb-recolhida',recolhida);
+  const b=document.getElementById('sb-toggle');
+  if(b){
+    b.title=recolhida?'Expandir menu':'Recolher menu';
+    const i=b.querySelector('i');if(i)i.className='ti '+(recolhida?'ti-chevrons-right':'ti-chevrons-left');
+  }
+}
+function alternarSidebar(){
+  const rec=!document.body.classList.contains('sb-recolhida');
+  aplicarSidebar(rec);
+  try{localStorage.setItem('sidebar-recolhida',rec?'1':'0');}catch(e){}
+}
+function iniciarSidebar(){
+  document.querySelectorAll('.nav-btn').forEach(b=>{if(!b.title)b.title=b.textContent.trim();}); // dica do ícone quando recolhida
+  let salvo=null;try{salvo=localStorage.getItem('sidebar-recolhida');}catch(e){}
+  aplicarSidebar(salvo===null?window.innerWidth<900:salvo==='1'); // sem preferência salva: começa recolhida em tela estreita (iPad em pé)
+}
+iniciarSidebar();
 
 // INICIALIZAR
 carregarTema();
