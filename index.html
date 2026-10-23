@@ -892,6 +892,16 @@
           <span class="sem-dica">Preencha a linha e clique em <b>✓</b> (ou tecle Enter) para salvar.</span>
         </div>
       </div>
+      <div class="card" style="margin-top:18px;">
+        <div class="card-label"><span><i class="ti ti-history"></i> Semanas anteriores <span class="hist-count" id="sem-hist-count"></span></span></div>
+        <div class="sem-dica" style="margin:-4px 0 10px;">Os pedidos de cada semana ficam guardados aqui. A cada nova semana (segunda-feira) a folha abre limpa para novos preenchimentos.</div>
+        <div class="table-wrap">
+          <table class="hist-table">
+            <thead><tr><th>Semana</th><th style="width:100px;">Pedidos</th><th style="width:100px;">Itens</th><th style="width:100px;">Pontos</th><th style="width:100px;"></th></tr></thead>
+            <tbody id="sem-hist-body"><tr><td colspan="5" class="empty-state"><div class="spinner"></div> Carregando...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
       <datalist id="sem-pdv-list"></datalist>
     </section>
 
@@ -2602,8 +2612,88 @@ function semCapturarSujos(){
   return m;
 }
 
+/* ── HISTÓRICO DE SEMANAS ──
+   Cada pedido fica gravado com a sua data, então cada semana tem a sua folha: a nova semana abre
+   limpa e as anteriores continuam guardadas (aparecem na lista "Semanas anteriores"). */
+let semHistAgg=null,semHistTs=0,semHistBusy=false,semHojeSegunda=null;
+
+// quando a segunda-feira muda e a pessoa estava vendo a semana corrente, abre a nova semana (limpa)
+function semVerificarViradaDeSemana(){
+  const atual=isoLocal(segundaDaSemana(new Date()));
+  if(semHojeSegunda===null){semHojeSegunda=atual;return false;}
+  if(atual===semHojeSegunda)return false;
+  const estavaNaSemanaCorrente=!!semanaIni&&isoLocal(semanaIni)===semHojeSegunda;
+  if(estavaNaSemanaCorrente){
+    if(semDirty.size>0||semFocoNaFolha())return false; // não atrapalha quem está preenchendo; tenta de novo depois
+    semanaIni=segundaDaSemana(new Date());
+    semDia=diaDeHoje();
+    semLinhaNova=false;
+    semanaHash=null;
+    semHojeSegunda=atual;
+    return true;
+  }
+  semHojeSegunda=atual; // estava vendo outra semana: não muda a tela
+  return false;
+}
+
+function semSomarSemana(agg,dataIso,pdv,qtd){
+  const[y,m,d]=String(dataIso||'').split('-').map(Number);
+  if(!y||!m||!d)return;
+  const k=isoLocal(segundaDaSemana(new Date(y,m-1,d)));
+  const a=agg[k]||(agg[k]={pedidos:0,itens:0,pdvs:new Set()});
+  a.pedidos++;a.itens+=(Number(qtd)||0);
+  const n=String(pdv||'').trim().toLowerCase();
+  if(n)a.pdvs.add(n);
+}
+
+async function carregarHistoricoSemanas(forcar){
+  if(semHistBusy)return;
+  if(!forcar&&semHistAgg&&Date.now()-semHistTs<60000)return;
+  semHistBusy=true;
+  try{
+    const agg={};
+    for(let p=0;p<10;p++){ // o Supabase devolve até 1000 linhas por consulta
+      const{data,error}=await sb.from('pedidos_semana').select('data,pdv,qtd').order('data',{ascending:false}).order('id',{ascending:true}).range(p*1000,p*1000+999);
+      if(error)throw error;
+      (data||[]).forEach(r=>semSomarSemana(agg,r.data,r.pdv,r.qtd));
+      if(!data||data.length<1000)break;
+    }
+    semHistAgg=agg;semHistTs=Date.now();
+    renderHistoricoSemanas();
+  }catch(e){console.error('Erro ao carregar o histórico de semanas:',e);}
+  finally{semHistBusy=false;}
+}
+
+function renderHistoricoSemanas(){
+  const body=document.getElementById('sem-hist-body');if(!body||!semanaIni)return;
+  const aberta=isoLocal(semanaIni);
+  const agg=Object.assign({},semHistAgg||{});
+  // a semana aberta usa o que está na tela (sempre atualizado)
+  const local={};allSemana.forEach(p=>semSomarSemana(local,p.data,p.pdv,p.qtd));
+  if(local[aberta])agg[aberta]=local[aberta];else delete agg[aberta];
+  const semanas=Object.keys(agg).sort().reverse();
+  const cont=document.getElementById('sem-hist-count');if(cont)cont.textContent=semanas.length?`(${semanas.length})`:'';
+  body.innerHTML=semanas.length?semanas.map(k=>{
+    const[y,m,d]=k.split('-').map(Number);
+    const ini=new Date(y,m-1,d),fim=new Date(y,m-1,d+5);
+    const a=agg[k];
+    const tag=k===aberta?' <span class="badge badge-g">Aberta</span>':(k===semHojeSegunda?' <span class="badge badge-g">Semana atual</span>':'');
+    return`<tr><td>${fmtDiaMes(ini)} a ${fmtDiaMes(fim)}/${fim.getFullYear()}${tag}</td><td>${a.pedidos}</td><td>${a.itens.toLocaleString('pt-BR')}</td><td>${a.pdvs.size}</td><td>${k===aberta?'—':`<button class="btn-edit" onclick="abrirSemanaHistorico('${k}')"><i class="ti ti-eye"></i> Abrir</button>`}</td></tr>`;
+  }).join(''):'<tr><td colspan="5" class="empty-state">Nenhuma semana com pedidos ainda</td></tr>';
+}
+
+function abrirSemanaHistorico(k){
+  if(!semConfirmarDescarte())return;
+  const[y,m,d]=String(k).split('-').map(Number);
+  semDirty=new Set();semLinhaNova=false;
+  semanaIni=new Date(y,m-1,d);semDia=0;
+  carregarSemana(true);
+  const t=document.getElementById('sem-tabs');if(t&&t.scrollIntoView)t.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
 async function carregarSemana(forcar){
   initSemana();
+  const virou=semVerificarViradaDeSemana(); // virou a semana? abre a nova, com a folha limpa
   const dias=diasDaSemana();
   const ini=isoLocal(dias[0]),fim=isoLocal(dias[5]);
   document.getElementById('sem-label').textContent=`${fmtDiaMes(dias[0])} a ${fmtDiaMes(dias[5])}/${dias[5].getFullYear()}`;
@@ -2614,6 +2704,7 @@ async function carregarSemana(forcar){
     if(error)throw error;
     if(meu!==semanaReq)return;
     aviso.style.display='none';
+    carregarHistoricoSemanas(); // (no máximo 1 vez por minuto)
     if(forcar||!pdvsCarregados){
       // refaz a lista de pontos extras a partir do banco (assim um nome renomeado ou excluído some da folha)
       pdvsCarregados=true;
@@ -2637,6 +2728,7 @@ async function carregarSemana(forcar){
     semanaHash=hash;
     allSemana=novo;
     renderSemana();
+    if(virou)semMsg('ok',`Nova semana iniciada (${fmtDiaMes(dias[0])} a ${fmtDiaMes(dias[5])}): a folha está limpa para novos pedidos. A semana anterior ficou guardada no histórico.`);
   }catch(e){
     if(meu!==semanaReq)return;
     console.error('Erro ao carregar pedidos da semana:',e);
@@ -2703,6 +2795,7 @@ function renderSemana(){
     semSetSelect('sem-f1-'+i,g.f1);
     semSujo(i);
   });
+  renderHistoricoSemanas();
 }
 
 function selecionarDiaSemana(i){
