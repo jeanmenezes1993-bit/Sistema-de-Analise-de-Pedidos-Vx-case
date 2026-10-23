@@ -237,9 +237,9 @@
     .sem-table tr.sem-row-ok td{background:rgba(29,158,117,.07);}
     .sem-table tr.sem-sujo td{background:rgba(239,159,39,.12);}
     .sem-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:7px;vertical-align:middle;}
-    /* pontos principais: piscam sempre em verde (preenchidos ou não) */
-    .sem-table td.sem-pisca{animation:semPisca 1.2s ease-in-out infinite;}
-    .sem-table td.sem-pisca .sem-dot{animation:semPiscaDot 1.2s ease-in-out infinite;}
+    /* pontos principais: a linha inteira pisca sempre em verde (preenchida ou não) */
+    .sem-table tr.sem-pisca td{animation:semPisca 1.2s ease-in-out infinite;}
+    .sem-table tr.sem-pisca .sem-dot{animation:semPiscaDot 1.2s ease-in-out infinite;}
     @keyframes semPisca{0%,100%{background-color:rgba(29,158,117,0);}50%{background-color:rgba(29,158,117,.5);}}
     @keyframes semPiscaDot{0%,100%{transform:scale(1);opacity:.55;}50%{transform:scale(1.6);opacity:1;}}
     .sem-in{width:100%;font-size:13px;padding:5px 7px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg-primary);color:var(--text-primary);text-align:center;}
@@ -2784,9 +2784,9 @@ function renderSemana(){
     const bloq=r?' disabled':''; // linha já salva fica travada até clicar em editar
     const ponto=l.novo
       ?`<td><input class="sem-in" id="sem-n-${i}" type="text" list="sem-pdv-list" placeholder="Nome do ponto" autocomplete="off" style="text-align:left;" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"></td>`
-      :`<td class="sem-ponto${semEhPrincipal(l.pdv)?' sem-principal':''}${semEhPrincipal(l.pdv)?' sem-pisca':''}" id="sem-pt-${i}"${semEhPrincipal(l.pdv)?' title="Ponto principal"':''}>${semPontoHTML(l.pdv)}</td>`;
+      :`<td class="sem-ponto${semEhPrincipal(l.pdv)?' sem-principal':''}" id="sem-pt-${i}"${semEhPrincipal(l.pdv)?' title="Ponto principal"':''}>${semPontoHTML(l.pdv)}</td>`;
     const por=r&&r.criado_por?` title="Registrado por ${escSem(r.criado_por)}"`:'';
-    return`<tr id="sem-tr-${i}" class="${r?'sem-row-ok':''}"${por}>
+    return`<tr id="sem-tr-${i}" class="${[r?'sem-row-ok':'',semEhPrincipal(l.pdv)?'sem-pisca':''].filter(Boolean).join(' ')}"${por}>
       ${ponto}
       <td><input class="sem-in" id="sem-q-${i}" type="number" min="1" value="${r?escSem(r.qtd):''}" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"${bloq}></td>
       <td><input class="sem-in" id="sem-h-${i}" type="time" value="${r?escSem((r.hora_inicial||'').slice(0,5)):''}" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"${bloq}></td>
