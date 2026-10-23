@@ -224,7 +224,7 @@
     .sem-sheet{background:var(--bg-primary);border:1px solid var(--border-md);border-radius:var(--radius-lg);overflow:hidden;}
     .sem-sheet-title{text-align:center;font-weight:700;font-size:15px;padding:11px 10px;border-bottom:1px solid var(--border-md);letter-spacing:.03em;text-transform:uppercase;}
     .sem-sheet-date{text-align:center;font-size:14px;padding:8px 10px;border-bottom:1px solid var(--border-md);color:var(--text-secondary);}
-    .sem-data-in{font-size:14px;font-weight:700;padding:3px 8px;margin-left:4px;border:1px solid var(--border-md);border-radius:var(--radius-sm);background:var(--bg-primary);color:var(--text-primary);cursor:pointer;}
+    .sem-data-in{font-size:14px;font-weight:700;width:118px;text-align:center;padding:3px 8px;margin-left:4px;border:1px solid var(--border-md);border-radius:var(--radius-sm);background:var(--bg-primary);color:var(--text-primary);cursor:text;}
     .sem-data-in:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 2px rgba(29,158,117,.15);}
     .sem-wrap{overflow-x:auto;}
     .sem-table{width:100%;border-collapse:collapse;font-size:13px;min-width:760px;}
@@ -877,7 +877,7 @@
 
       <div class="sem-sheet" id="sem-sheet">
         <div class="sem-sheet-title" id="sem-sheet-title"></div>
-        <div class="sem-sheet-date">Data: <input type="date" class="sem-data-in" id="sem-data-input" title="Clique para escolher outra data (segunda a sábado)" onchange="irParaDataSemana(this.value)"></div>
+        <div class="sem-sheet-date">Data: <input type="text" class="sem-data-in" id="sem-data-input" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" title="Digite a data (dd/mm/aaaa) e tecle Enter" onfocus="this.select()" onchange="irParaDataSemana(this.value)" onkeydown="if(event.key==='Enter')this.blur()"></div>
         <div class="sem-wrap">
           <table class="sem-table">
             <thead><tr><th style="width:28%;">Ponto</th><th style="width:13%;">Quantidade</th><th style="width:15%;">Horário inicial</th><th>Funcionário</th><th style="width:118px;"></th></tr></thead>
@@ -2634,7 +2634,7 @@ function renderSemana(){
     return`<button class="sem-tab${i===semDia?' ativo':''}${isoX===hoje?' hoje':''}" onclick="selecionarDiaSemana(${i})">${DIAS_SEMANA[i]}<small>${fmtDiaMes(x)} · ${n} pedido(s)</small></button>`;
   }).join('');
   document.getElementById('sem-sheet-title').textContent='Lista de pedidos diário — '+DIAS_LONGO[semDia];
-  semSetVal('sem-data-input',iso);
+  semSetVal('sem-data-input',fmtDataBR(d));
 
   const doDia=allSemana.filter(p=>p.data===iso);
   const preench=new Set(doDia.map(p=>(p.pdv||'').trim().toLowerCase())).size;
@@ -2687,13 +2687,38 @@ function mudarSemana(n){
   carregarSemana(true);
 }
 // campo "Data" da folha: ao escolher outra data, abre o dia correspondente (com os pontos desse dia da semana)
-function irParaDataSemana(v){
+function fmtDataBR(d){return `${fmtDiaMes(d)}/${d.getFullYear()}`;}
+// lê o que foi digitado (23/10/2026, 23/10/26, 23.10.2026, 23102026, 23/10...) e devolve AAAA-MM-DD, ou null se inválido
+function semParseData(txt,anoRef){
+  const partes=String(txt||'').trim().split(/[\/.\-\s]+/).filter(Boolean);
+  let d,m,y;
+  if(partes.length>=2){
+    d=Number(partes[0]);m=Number(partes[1]);
+    y=partes[2]!==undefined?Number(partes[2]):anoRef;
+    if(partes[2]!==undefined&&partes[2].length<=2)y=2000+y;
+  }else{
+    const n=(partes[0]||'').replace(/\D/g,'');
+    if(n.length===8){d=+n.slice(0,2);m=+n.slice(2,4);y=+n.slice(4,8);}
+    else if(n.length===6){d=+n.slice(0,2);m=+n.slice(2,4);y=2000+(+n.slice(4,6));}
+    else if(n.length===4){d=+n.slice(0,2);m=+n.slice(2,4);y=anoRef;}
+    else return null;
+  }
+  if(![d,m,y].every(Number.isInteger)||y<2000||y>2100)return null;
+  const dt=new Date(y,m-1,d);
+  if(dt.getFullYear()!==y||dt.getMonth()!==m-1||dt.getDate()!==d)return null;
+  return isoLocal(dt);
+}
+function irParaDataSemana(texto){
   initSemana();
-  const atual=isoLocal(diasDaSemana()[semDia]);
-  if(!v||v===atual){semSetVal('sem-data-input',atual);return;}
+  const dAtual=diasDaSemana()[semDia];
+  const atualTxt=fmtDataBR(dAtual);
+  if(!String(texto||'').trim()||String(texto).trim()===atualTxt){semSetVal('sem-data-input',atualTxt);return;}
+  const v=semParseData(texto,dAtual.getFullYear());
+  if(!v){semMsg('err','Data inválida. Digite no formato dd/mm/aaaa.');semSetVal('sem-data-input',atualTxt);return;}
+  if(v===isoLocal(dAtual)){semSetVal('sem-data-input',atualTxt);return;}
   const di=diaIndiceDaData(v);
-  if(di<0){semMsg('err','Escolha uma data de segunda a sábado.');semSetVal('sem-data-input',atual);return;}
-  if(!semConfirmarDescarte()){semSetVal('sem-data-input',atual);return;}
+  if(di<0){semMsg('err','Escolha uma data de segunda a sábado.');semSetVal('sem-data-input',atualTxt);return;}
+  if(!semConfirmarDescarte()){semSetVal('sem-data-input',atualTxt);return;}
   const[y,m,d]=v.split('-').map(Number);
   semDirty=new Set();semLinhaNova=false;
   semanaIni=segundaDaSemana(new Date(y,m-1,d));
