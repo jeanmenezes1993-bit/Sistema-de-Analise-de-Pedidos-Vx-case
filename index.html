@@ -2552,7 +2552,18 @@ function semMsg(tipo,txt){
 function semDesbloquear(i){
   ['sem-q-','sem-h-','sem-f1-'].forEach(p=>{const el=document.getElementById(p+i);if(el)el.disabled=false;});
   const b=document.getElementById('sem-b-'+i);if(b)b.disabled=false;
-  const e=document.getElementById('sem-e-'+i);if(e)e.title='Cancelar edição';
+  const e=document.getElementById('sem-e-'+i);if(e&&semLinhas[i]&&semLinhas[i].rec)e.title='Cancelar edição';
+}
+// transforma o nome do ponto da linha em campo de texto, para poder corrigi-lo
+function semAbrirPonto(i,valor){
+  const td=document.getElementById('sem-pt-'+i);
+  if(!td||document.getElementById('sem-n-'+i))return;
+  const l=semLinhas[i];
+  td.innerHTML=`<input class="sem-in" id="sem-n-${i}" type="text" autocomplete="off" style="text-align:left;text-transform:uppercase;" value="${escSem(valor!=null?valor:l.pdv)}" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})">`;
+}
+function semFecharPonto(i){
+  const td=document.getElementById('sem-pt-'+i),l=semLinhas[i];
+  if(td&&l)td.innerHTML=escSem(l.pdv);
 }
 function semSujo(i){
   semDirty.add(i);
@@ -2561,10 +2572,19 @@ function semSujo(i){
   if(tr){tr.classList.add('sem-sujo');tr.classList.remove('sem-row-ok');}
 }
 function editarLinhaSemana(i){
-  const l=semLinhas[i];if(!l||!l.rec)return;
-  if(semDirty.has(i)){semDirty.delete(i);renderSemana();return;} // já estava em edição: cancela e volta ao que está salvo
+  const l=semLinhas[i];if(!l||l.novo)return;
+  if(l.rec){
+    if(semDirty.has(i)){semDirty.delete(i);renderSemana();return;} // já estava em edição: cancela e volta ao que está salvo
+    semSujo(i);
+    semAbrirPonto(i);
+    const q=document.getElementById('sem-q-'+i);if(q)q.focus();
+    return;
+  }
+  // linha ainda sem registro: o lápis abre/fecha a edição do nome do ponto
+  if(document.getElementById('sem-n-'+i)){semFecharPonto(i);return;}
   semSujo(i);
-  const q=document.getElementById('sem-q-'+i);if(q)q.focus();
+  semAbrirPonto(i);
+  const n=document.getElementById('sem-n-'+i);if(n){n.focus();if(n.select)n.select();}
 }
 function semTecla(ev,i){
   if(ev.key==='Enter'){ev.preventDefault();salvarLinhaSemana(i);}
@@ -2574,7 +2594,7 @@ function semCapturarSujos(){
   const m={};
   semDirty.forEach(i=>{
     const l=semLinhas[i];if(!l)return;
-    m[semChave(l)]={n:semVal('sem-n-'+i),q:semVal('sem-q-'+i),h:semVal('sem-h-'+i),f1:semVal('sem-f1-'+i)};
+    m[semChave(l)]={n:semVal('sem-n-'+i),pe:!!document.getElementById('sem-n-'+i),q:semVal('sem-q-'+i),h:semVal('sem-h-'+i),f1:semVal('sem-f1-'+i)};
   });
   return m;
 }
@@ -2591,11 +2611,19 @@ async function carregarSemana(forcar){
     if(error)throw error;
     if(meu!==semanaReq)return;
     aviso.style.display='none';
-    if(!pdvsCarregados){
+    if(forcar||!pdvsCarregados){
+      // refaz a lista de pontos extras a partir do banco (assim um nome renomeado ou excluído some da folha)
       pdvsCarregados=true;
       sb.from('pedidos_semana').select('pdv,data').order('criado_em',{ascending:false}).limit(2000).then(r=>{
-        (r&&r.data||[]).forEach(x=>lembrarPdv(x.pdv,x.data));
-        if(!semFocoNaFolha()&&semDirty.size===0)renderSemana();
+        if(!r||r.error||!r.data)return;
+        const antes=JSON.stringify(extrasPdv.map(s=>[...s].sort()));
+        const refeitos=[new Set(),new Set(),new Set(),new Set(),new Set(),new Set()];
+        r.data.forEach(x=>{
+          const di=diaIndiceDaData(x.data),nome=String(x.pdv||'').trim();
+          if(di>=0&&nome&&!(PDVS_POR_DIA[di]||[]).some(b=>b.toLowerCase()===nome.toLowerCase()))refeitos[di].add(nome);
+        });
+        extrasPdv=refeitos;
+        if(JSON.stringify(extrasPdv.map(s=>[...s].sort()))!==antes&&!semFocoNaFolha()&&semDirty.size===0)renderSemana();
       });
     }
     const novo=data||[];
@@ -2651,14 +2679,14 @@ function renderSemana(){
     const bloq=r?' disabled':''; // linha já salva fica travada até clicar em editar
     const ponto=l.novo
       ?`<td><input class="sem-in" id="sem-n-${i}" type="text" list="sem-pdv-list" placeholder="Nome do ponto" autocomplete="off" style="text-align:left;" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"></td>`
-      :`<td class="sem-ponto">${escSem(l.pdv)}</td>`;
+      :`<td class="sem-ponto" id="sem-pt-${i}">${escSem(l.pdv)}</td>`;
     const por=r&&r.criado_por?` title="Registrado por ${escSem(r.criado_por)}"`:'';
     return`<tr id="sem-tr-${i}" class="${r?'sem-row-ok':''}"${por}>
       ${ponto}
       <td><input class="sem-in" id="sem-q-${i}" type="number" min="1" value="${r?escSem(r.qtd):''}" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"${bloq}></td>
       <td><input class="sem-in" id="sem-h-${i}" type="time" value="${r?escSem((r.hora_inicial||'').slice(0,5)):''}" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"${bloq}></td>
       <td><select class="sem-in" id="sem-f1-${i}" style="text-align:left;" onchange="semSujo(${i})"${bloq}>${semOpcoesColab(ativos,f1)}</select></td>
-      <td class="sem-acoes"><div class="sem-btns"><button class="sem-ok" id="sem-b-${i}" onclick="salvarLinhaSemana(${i})" title="Salvar linha"${bloq}><i class="ti ti-check"></i></button><button class="btn-edit" id="sem-e-${i}" onclick="editarLinhaSemana(${i})" title="Editar linha"${r?'':' style="visibility:hidden;"'}><i class="ti ti-pencil"></i></button><button class="btn-del" onclick="limparLinhaSemana(${i})" title="${r?'Limpar linha (exclui o registro)':'Limpar campos'}"><i class="ti ti-trash"></i></button></div></td>
+      <td class="sem-acoes"><div class="sem-btns"><button class="sem-ok" id="sem-b-${i}" onclick="salvarLinhaSemana(${i})" title="Salvar linha"${bloq}><i class="ti ti-check"></i></button><button class="btn-edit" id="sem-e-${i}" onclick="editarLinhaSemana(${i})" title="${l.novo?'':(r?'Editar linha':'Editar o nome do ponto')}"${l.novo?' style="visibility:hidden;"':''}><i class="ti ti-pencil"></i></button><button class="btn-del" onclick="limparLinhaSemana(${i})" title="${r?'Limpar linha (exclui o registro)':'Limpar campos'}"><i class="ti ti-trash"></i></button></div></td>
     </tr>`;
   }).join('');
 
@@ -2666,7 +2694,8 @@ function renderSemana(){
 
   semLinhas.forEach((l,i)=>{
     const g=guardados[semChave(l)];if(!g)return;
-    if(l.novo)semSetVal('sem-n-'+i,g.n);
+    if(g.pe&&!l.novo)semAbrirPonto(i,g.n);
+    if(l.novo||g.pe)semSetVal('sem-n-'+i,g.n);
     semSetVal('sem-q-'+i,g.q);semSetVal('sem-h-'+i,g.h);
     semSetSelect('sem-f1-'+i,g.f1);
     semSujo(i);
@@ -2742,7 +2771,8 @@ function adicionarPontoSemana(){
 async function salvarLinhaSemana(i){
   const l=semLinhas[i];if(!l)return;
   const iso=isoLocal(diasDaSemana()[semDia]);
-  const nomeDigitado=l.novo?semVal('sem-n-'+i).trim().replace(/\s+/g,' '):l.pdv;
+  const editaPonto=!!document.getElementById('sem-n-'+i); // linha nova ou com o nome do ponto aberto para edição
+  const nomeDigitado=editaPonto?semVal('sem-n-'+i).trim().replace(/\s+/g,' '):l.pdv;
   const qtd=parseInt(semVal('sem-q-'+i),10);
   const hora=semVal('sem-h-'+i);
   const colab=semVal('sem-f1-'+i);
@@ -2750,8 +2780,8 @@ async function salvarLinhaSemana(i){
   if(!qtd||qtd<=0){semMsg('err',`${nomeDigitado}: informe a quantidade.`);return;}
   if(!hora){semMsg('err',`${nomeDigitado}: informe o horário inicial.`);return;}
   if(!colab){semMsg('err',`${nomeDigitado}: selecione o funcionário.`);return;}
-  // ponto novo: reaproveita a grafia de um ponto já existente; senão grava em maiúsculas, como na folha
-  const pdv=l.novo?(listaPdvs().find(n=>n.toLowerCase()===nomeDigitado.toLowerCase())||nomeDigitado.toUpperCase()):l.pdv;
+  // nome digitado: reaproveita a grafia de um ponto já existente; senão grava em maiúsculas, como na folha
+  const pdv=editaPonto?(listaPdvs().find(n=>n.toLowerCase()===nomeDigitado.toLowerCase())||nomeDigitado.toUpperCase()):l.pdv;
   const btn=document.getElementById('sem-b-'+i);
   if(btn)btn.disabled=true;
   try{
