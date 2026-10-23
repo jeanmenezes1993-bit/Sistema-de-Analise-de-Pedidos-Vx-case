@@ -238,9 +238,11 @@
     .sem-table tr.sem-sujo td{background:rgba(239,159,39,.12);}
     .sem-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:7px;vertical-align:middle;}
     /* pontos principais: a linha inteira pisca sempre em verde (preenchida ou não) */
-    .sem-table tr.sem-pisca td{animation:semPisca 1.2s ease-in-out infinite;}
-    .sem-table tr.sem-pisca .sem-dot{animation:semPiscaDot 1.2s ease-in-out infinite;}
+    .sem-table tr.sem-pisca td{-webkit-animation:semPisca 1.2s ease-in-out infinite;animation:semPisca 1.2s ease-in-out infinite;}
+    .sem-table tr.sem-pisca .sem-dot{-webkit-animation:semPiscaDot 1.2s ease-in-out infinite;animation:semPiscaDot 1.2s ease-in-out infinite;}
+    @-webkit-keyframes semPisca{0%,100%{background-color:rgba(29,158,117,0);}50%{background-color:rgba(29,158,117,.5);}}
     @keyframes semPisca{0%,100%{background-color:rgba(29,158,117,0);}50%{background-color:rgba(29,158,117,.5);}}
+    @-webkit-keyframes semPiscaDot{0%,100%{-webkit-transform:scale(1);transform:scale(1);opacity:.55;}50%{-webkit-transform:scale(1.6);transform:scale(1.6);opacity:1;}}
     @keyframes semPiscaDot{0%,100%{transform:scale(1);opacity:.55;}50%{transform:scale(1.6);opacity:1;}}
     .sem-in{width:100%;font-size:13px;padding:5px 7px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg-primary);color:var(--text-primary);text-align:center;}
     .sem-in:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 2px rgba(29,158,117,.15);}
@@ -932,6 +934,12 @@
       <div style="overflow-x:auto;"><table class="hist-table"><thead><tr><th style="width:130px;">Movimento</th><th style="width:90px;">Data</th><th style="width:80px;">Qtd.</th><th style="width:80px;">T. Inicial</th><th style="width:80px;">T. Final</th><th style="width:70px;">Duração</th></tr></thead><tbody id="mp-hist"></tbody></table></div>
     </div>
   </div>
+</div>
+
+<!-- AVISO DE NOVA VERSÃO -->
+<div id="nova-versao" style="display:none;position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:9999;background:#111827;color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.3);gap:12px;align-items:center;white-space:nowrap;">
+  <span>Nova versão do sistema disponível</span>
+  <button onclick="atualizarAgora()" style="background:#1D9E75;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;">Atualizar</button>
 </div>
 
 <script>
@@ -2929,6 +2937,37 @@ async function limparLinhaSemana(i){
     await carregarSemana(true);
   }catch(e){semMsg('err','Erro ao excluir: '+((e&&e.message)||e));}
 }
+
+/* ── ATUALIZAÇÃO AUTOMÁTICA DA VERSÃO ──
+   Celular/tablet (atalho na tela inicial) guardam a página antiga na memória. Aqui o sistema confere se há
+   versão nova: ao abrir, recarrega sozinho; ao voltar para o app, recarrega se estiver na folha da semana
+   sem nada em preenchimento; nos demais casos mostra o aviso "Atualizar". */
+const APP_VERSAO='202610231513';
+let appVersaoNova=null;
+function atualizarAgora(){
+  const base=location.href.split('#')[0].split('?')[0];
+  location.replace(base+'?v='+encodeURIComponent(appVersaoNova||Date.now()));
+}
+async function verificarNovaVersao(origem){
+  try{
+    const base=location.href.split('#')[0].split('?')[0];
+    const r=await fetch(base+'?_='+Date.now(),{cache:'no-store'});
+    if(!r.ok)return;
+    const m=(await r.text()).match(/const APP_VERSAO='([^']+)'/);
+    if(!m||m[1]<=APP_VERSAO)return; // versões são datas (AAAAMMDDhhmm): só age se a do servidor for mais nova
+    appVersaoNova=m[1];
+    const jaTentou=location.search.indexOf('v='+encodeURIComponent(m[1]))>=0; // evita repetir o recarregamento
+    const tela=document.getElementById('screen-semana');
+    const naFolhaSemTrabalho=!!tela&&tela.classList.contains('active')&&semDirty.size===0&&!semFocoNaFolha();
+    if(!jaTentou&&(origem==='load'||naFolhaSemTrabalho)){atualizarAgora();return;}
+    const aviso=document.getElementById('nova-versao');
+    if(aviso)aviso.style.display='flex';
+  }catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')verificarNovaVersao('retorno');});
+window.addEventListener('pageshow',e=>{if(e.persisted)verificarNovaVersao('retorno');});
+setInterval(()=>{if(document.visibilityState==='visible')verificarNovaVersao('periodico');},300000);
+verificarNovaVersao('load');
 
 // INICIALIZAR
 carregarTema();
