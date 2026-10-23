@@ -215,20 +215,32 @@
     @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
     .empty-state{text-align:center;padding:28px;color:var(--text-secondary);font-size:13px;}
     .mono{font-family:"SF Mono","Fira Code",monospace;font-size:12px;}
-    .sem-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;align-items:end;}
-    .sem-wrap{overflow-x:auto;padding-bottom:6px;}
-    .sem-board{display:grid;grid-template-columns:repeat(6,minmax(170px,1fr));gap:12px;}
-    .sem-col{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px;display:flex;flex-direction:column;gap:8px;min-height:220px;}
-    .sem-col.hoje{border-color:var(--green);box-shadow:0 0 0 2px rgba(29,158,117,.15);}
-    .sem-col-head{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;padding-bottom:8px;border-bottom:1px solid var(--border);}
-    .sem-dia{font-size:13px;font-weight:700;} .sem-data{font-size:11px;color:var(--text-secondary);margin-top:1px;} .sem-tot{font-size:11px;color:var(--text-secondary);margin-top:3px;}
-    .sem-add{background:none;border:1px solid var(--border-md);color:var(--green);border-radius:var(--radius-sm);width:26px;height:26px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-    .sem-add:hover{background:var(--green-light);}
-    .sem-item{background:var(--bg-secondary);border-radius:var(--radius-md);padding:8px 10px;display:flex;flex-direction:column;gap:4px;}
-    .sem-item-top{display:flex;align-items:center;justify-content:space-between;gap:6px;}
-    .sem-pdv{font-size:12.5px;font-weight:600;overflow-wrap:anywhere;} .sem-sub{font-size:11px;color:var(--text-secondary);}
-    .sem-act{display:flex;justify-content:flex-end;gap:4px;} .sem-act .btn-edit{margin-right:0;}
-    .sem-vazio{font-size:12px;color:var(--text-tertiary);text-align:center;padding:14px 0;}
+    .sem-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+    .sem-tab{border:1px solid var(--border-md);background:var(--bg-primary);color:var(--text-secondary);border-radius:var(--radius-md);padding:7px 14px;cursor:pointer;font-size:13px;font-weight:600;text-align:left;line-height:1.3;}
+    .sem-tab small{display:block;font-size:10.5px;font-weight:400;opacity:.85;}
+    .sem-tab:hover{background:var(--bg-secondary);}
+    .sem-tab.hoje:not(.ativo){border-color:var(--green);color:var(--green-text);}
+    .sem-tab.ativo{background:var(--green);border-color:var(--green);color:#fff;}
+    .sem-sheet{background:var(--bg-primary);border:1px solid var(--border-md);border-radius:var(--radius-lg);overflow:hidden;}
+    .sem-sheet-title{text-align:center;font-weight:700;font-size:15px;padding:11px 10px;border-bottom:1px solid var(--border-md);letter-spacing:.03em;text-transform:uppercase;}
+    .sem-sheet-date{text-align:center;font-size:14px;padding:8px 10px;border-bottom:1px solid var(--border-md);color:var(--text-secondary);}
+    .sem-sheet-date strong{color:var(--text-primary);}
+    .sem-wrap{overflow-x:auto;}
+    .sem-table{width:100%;border-collapse:collapse;font-size:13px;min-width:760px;}
+    .sem-table th{text-align:center;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:9px 8px;background:var(--bg-secondary);border:1px solid var(--border-md);}
+    .sem-table td{border:1px solid var(--border-md);padding:4px 6px;vertical-align:middle;}
+    .sem-table td.sem-ponto{font-weight:600;text-transform:uppercase;padding:6px 10px;white-space:nowrap;}
+    .sem-table tr.sem-row-ok td{background:rgba(29,158,117,.07);}
+    .sem-table tr.sem-sujo td{background:rgba(239,159,39,.12);}
+    .sem-in{width:100%;font-size:13px;padding:5px 7px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg-primary);color:var(--text-primary);text-align:center;}
+    .sem-in:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 2px rgba(29,158,117,.15);}
+    .sem-func{display:flex;gap:6px;} .sem-func .sem-in{text-align:left;}
+    .sem-acoes{width:84px;text-align:center;white-space:nowrap;}
+    .sem-ok{background:var(--green);border:none;color:#fff;border-radius:var(--radius-sm);width:30px;height:28px;cursor:pointer;font-size:15px;}
+    .sem-ok:hover{background:var(--green-dark);} .sem-ok:disabled{background:#9FE1CB;cursor:not-allowed;}
+    .sem-rodape{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 12px;}
+    .sem-rodape button{font-size:13px;padding:6px 12px;border-radius:var(--radius-md);border:1px dashed var(--border-md);background:none;color:var(--green-text);cursor:pointer;}
+    .sem-dica{font-size:11.5px;color:var(--text-secondary);}
     select,input{cursor:pointer;}
   </style>
 </head>
@@ -838,7 +850,7 @@
     <!-- PEDIDOS DA SEMANA -->
     <section class="screen" id="screen-semana">
       <div class="top-row">
-        <div><div class="page-title">Pedidos da Semana</div><div class="page-sub">Cadastre os pedidos de cada dia, de segunda a sábado</div></div>
+        <div><div class="page-title">Pedidos da Semana</div><div class="page-sub">Lista diária de pedidos por ponto de venda, de segunda a sábado</div></div>
         <div class="filter-row">
           <button onclick="mudarSemana(-1)" title="Semana anterior"><i class="ti ti-chevron-left"></i></button>
           <div id="sem-label" style="font-size:13px;font-weight:600;min-width:170px;text-align:center;"></div>
@@ -849,32 +861,32 @@
       </div>
 
       <div class="kpi-grid" style="margin-bottom:18px;">
-        <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-clipboard-list" style="color:#378ADD;"></i></div><div class="kpi-label">Pedidos na semana</div><div class="kpi-value" id="sem-kpi-pedidos">—</div></div>
-        <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-package" style="color:#1D9E75;"></i></div><div class="kpi-label">Itens na semana</div><div class="kpi-value" id="sem-kpi-itens">—</div></div>
-        <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-building-store" style="color:#EF9F27;"></i></div><div class="kpi-label">Pontos de venda</div><div class="kpi-value" id="sem-kpi-pdv">—</div></div>
-      </div>
-
-      <div class="card" id="sem-form-card" style="margin-bottom:18px;">
-        <div class="card-label" id="sem-form-title"><i class="ti ti-plus"></i> Novo pedido</div>
-        <div id="sem-msg-ok" class="msg msg-ok"><i class="ti ti-circle-check"></i> Pedido salvo!</div>
-        <div id="sem-msg-err" class="msg msg-err"><i class="ti ti-alert-circle"></i><span id="sem-msg-err-txt"></span></div>
-        <div class="sem-form-grid">
-          <div class="form-group" style="margin:0;"><label class="form-label">Data *</label><input class="form-input" id="sem-data" type="date"></div>
-          <div class="form-group" style="margin:0;"><label class="form-label">Ponto de venda *</label><input class="form-input" id="sem-pdv" type="text" placeholder="Nome do ponto de venda" list="sem-pdv-list" autocomplete="off"><datalist id="sem-pdv-list"></datalist></div>
-          <div class="form-group" style="margin:0;"><label class="form-label">Colaborador (coletando) *</label><select class="form-input" id="sem-colab"><option value="">Selecione o colaborador...</option></select></div>
-          <div class="form-group" style="margin:0;"><label class="form-label">Qtd. de itens *</label><input class="form-input" id="sem-qtd" type="number" min="1" placeholder="Ex: 120"></div>
-          <div class="form-group" style="margin:0;"><label class="form-label">Hora inicial *</label><input class="form-input" id="sem-hora" type="time"></div>
-          <input type="hidden" id="sem-edit-id" value="">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <button class="btn-save" id="btn-salvar-sem" onclick="salvarSemana()"><i class="ti ti-device-floppy"></i> Salvar</button>
-            <button style="padding:10px;border-radius:var(--radius-md);border:1px solid var(--border-md);background:none;cursor:pointer;font-size:13px;color:var(--text-secondary);" onclick="cancelarEdicaoSemana()"><i class="ti ti-x"></i> Cancelar</button>
-          </div>
-        </div>
-        <div class="form-error" id="sem-form-error"></div>
+        <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-building-store" style="color:#378ADD;"></i></div><div class="kpi-label">Pontos preenchidos no dia</div><div class="kpi-value" id="sem-kpi-pontos">—</div></div>
+        <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-package" style="color:#1D9E75;"></i></div><div class="kpi-label">Itens no dia</div><div class="kpi-value" id="sem-kpi-itens">—</div></div>
+        <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-calendar-week" style="color:#EF9F27;"></i></div><div class="kpi-label">Itens na semana</div><div class="kpi-value" id="sem-kpi-semana">—</div></div>
       </div>
 
       <div id="sem-aviso" class="msg msg-err" style="display:none;"></div>
-      <div class="sem-wrap"><div class="sem-board" id="sem-board"></div></div>
+      <div id="sem-msg-ok" class="msg msg-ok"><i class="ti ti-circle-check"></i> <span id="sem-msg-ok-txt">Salvo!</span></div>
+      <div id="sem-msg-err" class="msg msg-err"><i class="ti ti-alert-circle"></i> <span id="sem-msg-err-txt"></span></div>
+
+      <div class="sem-tabs" id="sem-tabs"></div>
+
+      <div class="sem-sheet" id="sem-sheet">
+        <div class="sem-sheet-title" id="sem-sheet-title"></div>
+        <div class="sem-sheet-date" id="sem-sheet-date"></div>
+        <div class="sem-wrap">
+          <table class="sem-table">
+            <thead><tr><th style="width:28%;">Ponto</th><th style="width:13%;">Quantidade</th><th style="width:15%;">Horário inicial</th><th>Funcionário</th><th style="width:84px;"></th></tr></thead>
+            <tbody id="sem-body"></tbody>
+          </table>
+        </div>
+        <div class="sem-rodape">
+          <button onclick="adicionarPontoSemana()"><i class="ti ti-plus"></i> Adicionar outro ponto</button>
+          <span class="sem-dica">Preencha a linha e clique em <b>✓</b> (ou tecle Enter) para salvar. Em caso de dois funcionários, use o segundo campo.</span>
+        </div>
+      </div>
+      <datalist id="sem-pdv-list"></datalist>
     </section>
 
   </main>
@@ -2423,14 +2435,18 @@ function verificarMovimento(val){
 window.toggleTheme=toggleTheme;
 window.verificarMovimento=verificarMovimento;
 
-/* ── PEDIDOS DA SEMANA (segunda a sábado) ── */
+/* ── PEDIDOS DA SEMANA (lista diária por ponto de venda, segunda a sábado) ── */
 const DIAS_SEMANA=['Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
-let allSemana=[],semanaIni=null,semanaHash=null,semanaReq=0;
-let pdvsConhecidos=new Set(),pdvsCarregados=false,semSigColab='',semSigPdv='';
+const DIAS_LONGO=['Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+const PDVS_PADRAO=['BELEM LOJA 459','BELEM LOJA 262','BELEM Q. 07','BELEM Q. 103','MANAUS LOJA 90','MANAUS Q. 758','MANAUS AMAZONAS Q. A39','GOIANIA LOJA 438','GOIANIA Q.04','GOIANIA Q.10','GOIANIA Q.P13','GOIANIA SHOPP LOJA 217','GOIANIA SHOPP Q. T18','NATAL LOJA 378','NATAL MIDWAY','BELA VISTA LOJA','BELA VISTA QUIOSQUE'];
+let allSemana=[],semanaIni=null,semDia=null,semanaHash=null,semanaReq=0;
+let pdvsConhecidos=new Set(),pdvsCarregados=false;
+let semLinhas=[],semDirty=new Set(),semLinhaNova=false,semMsgTimer=null;
 
 function escSem(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function isoLocal(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function fmtDiaMes(d){return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;}
+function fmtDataCurta(d){return `${fmtDiaMes(d)}/${String(d.getFullYear()).slice(2)}`;}
 
 // segunda-feira da semana de d (se d for domingo, usa a semana seguinte)
 function segundaDaSemana(d){
@@ -2442,51 +2458,91 @@ function segundaDaSemana(d){
 function diasDaSemana(){
   return DIAS_SEMANA.map((_,i)=>new Date(semanaIni.getFullYear(),semanaIni.getMonth(),semanaIni.getDate()+i));
 }
+function diaDeHoje(){const dow=new Date().getDay();return dow>=1&&dow<=6?dow-1:0;}
 function initSemana(){
   if(!semanaIni)semanaIni=segundaDaSemana(new Date());
-  const inp=document.getElementById('sem-data');
-  if(inp&&!inp.value){
-    const hoje=new Date();
-    inp.value=hoje.getDay()===0?isoLocal(semanaIni):isoLocal(hoje);
-  }
+  if(semDia===null)semDia=diaDeHoje();
 }
 
-function setSemColab(nome){
-  const sel=document.getElementById('sem-colab');
-  if(nome&&![...sel.options].some(o=>o.value===nome)){
-    const opt=document.createElement('option');
-    opt.value=nome;opt.textContent=nome+' (inativo)';opt.dataset.temp='1';
-    sel.appendChild(opt);
+function semVal(id){const el=document.getElementById(id);return el?el.value:'';}
+function semSetVal(id,v){const el=document.getElementById(id);if(el)el.value=v==null?'':v;}
+function semSetSelect(id,nome){
+  const el=document.getElementById(id);if(!el)return;
+  if(nome&&![...el.options].some(o=>o.value===nome)){
+    const op=document.createElement('option');
+    op.value=nome;op.textContent=nome+' (inativo)';
+    el.appendChild(op);
   }
-  sel.value=nome||'';
+  el.value=nome||'';
+}
+function colabsAtivosSemana(){return allColabs.filter(c=>c.status==='ativo'||!c.status).map(c=>c.nome);}
+function semOpcoesColab(ativos,sel,comNenhum){
+  const lista=ativos.slice();
+  if(sel&&!lista.includes(sel))lista.push(sel); // inativo/removido: mantém o nome já salvo
+  return `<option value="">${comNenhum?'— (nenhum)':'Selecione...'}</option>`+lista.map(n=>`<option value="${escSem(n)}"${n===sel?' selected':''}>${escSem(n)}${ativos.includes(n)?'':' (inativo)'}</option>`).join('');
 }
 
-function popularSemanaSelects(){
-  const sel=document.getElementById('sem-colab');
-  if(sel){
-    const ativos=allColabs.filter(c=>c.status==='ativo'||!c.status).map(c=>c.nome);
-    const sig=JSON.stringify(ativos);
-    if(sig!==semSigColab){
-      semSigColab=sig;
-      const cur=sel.value;
-      sel.innerHTML='<option value="">Selecione o colaborador...</option>'+ativos.map(n=>`<option value="${escSem(n)}">${escSem(n)}</option>`).join('');
-      if(cur)setSemColab(cur);
-    }
-  }
-  const dl=document.getElementById('sem-pdv-list');
-  if(dl){
-    const nomes=[...pdvsConhecidos].sort((a,b)=>a.localeCompare(b,'pt-BR'));
-    const sig=JSON.stringify(nomes);
-    if(sig!==semSigPdv){
-      semSigPdv=sig;
-      dl.innerHTML=nomes.map(n=>`<option value="${escSem(n)}">`).join('');
-    }
-  }
+// pontos de venda da lista: os padrões da folha + os que já foram usados no sistema
+function listaPdvs(){
+  const vistos=new Set(PDVS_PADRAO.map(n=>n.toLowerCase()));
+  const extras=[];
+  [...pdvsConhecidos].sort((a,b)=>a.localeCompare(b,'pt-BR')).forEach(n=>{
+    const k=String(n).trim().toLowerCase();
+    if(k&&!vistos.has(k)){vistos.add(k);extras.push(String(n).trim());}
+  });
+  return PDVS_PADRAO.concat(extras);
+}
+
+function montarLinhasSemana(iso){
+  const regs=allSemana.filter(p=>p.data===iso);
+  const linhas=[];
+  listaPdvs().forEach(pdv=>{
+    const k=pdv.toLowerCase();
+    const recs=regs.filter(p=>(p.pdv||'').trim().toLowerCase()===k);
+    if(recs.length)recs.forEach(r=>linhas.push({pdv,rec:r}));
+    else linhas.push({pdv,rec:null});
+  });
+  if(semLinhaNova)linhas.push({pdv:'',rec:null,novo:true});
+  return linhas;
+}
+function semChave(l){return l.novo?'novo':(l.rec?'id:'+l.rec.id:'pdv:'+l.pdv.toLowerCase());}
+
+function semFocoNaFolha(){
+  const a=document.activeElement,f=document.getElementById('sem-sheet');
+  return !!(a&&f&&f.contains&&f.contains(a)&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName));
+}
+function semConfirmarDescarte(){
+  return semDirty.size===0||confirm('Há linhas preenchidas e ainda não salvas. Descartar e continuar?');
+}
+function semMsg(tipo,txt){
+  const ok=document.getElementById('sem-msg-ok'),er=document.getElementById('sem-msg-err');
+  ok.style.display='none';er.style.display='none';
+  clearTimeout(semMsgTimer);
+  if(tipo==='ok'){document.getElementById('sem-msg-ok-txt').textContent=txt;ok.style.display='flex';}
+  else{document.getElementById('sem-msg-err-txt').textContent=txt;er.style.display='flex';}
+  semMsgTimer=setTimeout(()=>{ok.style.display='none';er.style.display='none';},tipo==='ok'?3000:7000);
+}
+
+function semSujo(i){
+  semDirty.add(i);
+  const tr=document.getElementById('sem-tr-'+i);
+  if(tr){tr.classList.add('sem-sujo');tr.classList.remove('sem-row-ok');}
+}
+function semTecla(ev,i){
+  if(ev.key==='Enter'){ev.preventDefault();salvarLinhaSemana(i);}
+}
+// guarda o que foi digitado e ainda não foi salvo, para não perder ao redesenhar a folha
+function semCapturarSujos(){
+  const m={};
+  semDirty.forEach(i=>{
+    const l=semLinhas[i];if(!l)return;
+    m[semChave(l)]={n:semVal('sem-n-'+i),q:semVal('sem-q-'+i),h:semVal('sem-h-'+i),f1:semVal('sem-f1-'+i),f2:semVal('sem-f2-'+i)};
+  });
+  return m;
 }
 
 async function carregarSemana(forcar){
   initSemana();
-  popularSemanaSelects();
   const dias=diasDaSemana();
   const ini=isoLocal(dias[0]),fim=isoLocal(dias[5]);
   document.getElementById('sem-label').textContent=`${fmtDiaMes(dias[0])} a ${fmtDiaMes(dias[5])}/${dias[5].getFullYear()}`;
@@ -2501,16 +2557,16 @@ async function carregarSemana(forcar){
       pdvsCarregados=true;
       sb.from('pedidos_semana').select('pdv').order('criado_em',{ascending:false}).limit(1000).then(r=>{
         (r&&r.data||[]).forEach(x=>{if(x.pdv)pdvsConhecidos.add(x.pdv);});
-        popularSemanaSelects();
+        if(!semFocoNaFolha()&&semDirty.size===0)renderSemana();
       });
     }
     const novo=data||[];
     novo.forEach(p=>{if(p.pdv)pdvsConhecidos.add(p.pdv);});
-    const hash=ini+'|'+JSON.stringify(novo);
+    const hash=ini+'|'+JSON.stringify(novo)+'|'+JSON.stringify(colabsAtivosSemana())+'|'+JSON.stringify(listaPdvs());
     if(!forcar&&hash===semanaHash)return;
+    if(!forcar&&semFocoNaFolha())return; // não interrompe quem está digitando
     semanaHash=hash;
     allSemana=novo;
-    popularSemanaSelects();
     renderSemana();
   }catch(e){
     if(meu!==semanaReq)return;
@@ -2521,135 +2577,144 @@ async function carregarSemana(forcar){
       ?'<i class="ti ti-alert-circle"></i> A tabela <b>pedidos_semana</b> ainda não existe no Supabase. Crie-a com o SQL de instalação e recarregue a página.'
       :'<i class="ti ti-alert-circle"></i> '+escSem('Erro ao carregar: '+msg);
     aviso.style.display='flex';
-    document.getElementById('sem-board').innerHTML='';
+    document.getElementById('sem-body').innerHTML='';
   }
 }
 
 function renderSemana(){
   const dias=diasDaSemana();
   const hoje=isoLocal(new Date());
-  document.getElementById('sem-kpi-pedidos').textContent=allSemana.length;
-  document.getElementById('sem-kpi-itens').textContent=allSemana.reduce((s,p)=>s+(p.qtd||0),0).toLocaleString('pt-BR');
-  document.getElementById('sem-kpi-pdv').textContent=new Set(allSemana.map(p=>(p.pdv||'').trim().toLowerCase()).filter(Boolean)).size;
-  document.getElementById('sem-board').innerHTML=dias.map((d,i)=>{
-    const iso=isoLocal(d);
-    const lista=allSemana.filter(p=>p.data===iso);
-    const qtdDia=lista.reduce((s,p)=>s+(p.qtd||0),0);
-    const cards=lista.length?lista.map(p=>{
-      const hora=(p.hora_inicial||'').slice(0,5)||'—';
-      const por=(p.criado_por||'').split('@')[0];
-      return`<div class="sem-item">
-        <div class="sem-item-top"><span class="sem-pdv">${escSem(p.pdv)}</span><span class="badge badge-g" title="Itens do pedido">${(p.qtd||0).toLocaleString('pt-BR')}</span></div>
-        <div class="sem-sub"><i class="ti ti-user"></i> ${escSem(p.colab)} · <i class="ti ti-clock"></i> ${escSem(hora)}</div>
-        ${por?`<div class="sem-sub" style="font-size:10px;color:var(--text-tertiary);">Registrado por ${escSem(por)}</div>`:''}
-        <div class="sem-act"><button class="btn-edit" onclick="editarSemana('${escSem(p.id)}')" title="Editar"><i class="ti ti-pencil"></i></button><button class="btn-del" onclick="deletarSemana('${escSem(p.id)}')" title="Excluir"><i class="ti ti-trash"></i></button></div>
-      </div>`;
-    }).join(''):'<div class="sem-vazio">Nenhum pedido</div>';
-    return`<div class="sem-col${iso===hoje?' hoje':''}">
-      <div class="sem-col-head">
-        <div>
-          <div class="sem-dia">${DIAS_SEMANA[i]}${iso===hoje?' <span class="badge badge-g" style="margin-left:4px;">Hoje</span>':''}</div>
-          <div class="sem-data">${fmtDiaMes(d)}</div>
-          <div class="sem-tot">${lista.length} pedido(s) · ${qtdDia.toLocaleString('pt-BR')} itens</div>
-        </div>
-        <button class="sem-add" onclick="novoPedidoNoDia('${iso}')" title="Cadastrar pedido neste dia"><i class="ti ti-plus"></i></button>
-      </div>
-      ${cards}
-    </div>`;
+  const d=dias[semDia],iso=isoLocal(d);
+  const guardados=semCapturarSujos();
+  semDirty=new Set();
+  semLinhas=montarLinhasSemana(iso);
+  const ativos=colabsAtivosSemana();
+
+  document.getElementById('sem-tabs').innerHTML=dias.map((x,i)=>{
+    const isoX=isoLocal(x);
+    const n=allSemana.filter(p=>p.data===isoX).length;
+    return`<button class="sem-tab${i===semDia?' ativo':''}${isoX===hoje?' hoje':''}" onclick="selecionarDiaSemana(${i})">${DIAS_SEMANA[i]}<small>${fmtDiaMes(x)} · ${n} pedido(s)</small></button>`;
   }).join('');
+  document.getElementById('sem-sheet-title').textContent='Lista de pedidos diário — '+DIAS_LONGO[semDia];
+  document.getElementById('sem-sheet-date').innerHTML='Data: <strong>'+fmtDataCurta(d)+'</strong>';
+
+  const doDia=allSemana.filter(p=>p.data===iso);
+  const preench=new Set(doDia.map(p=>(p.pdv||'').trim().toLowerCase())).size;
+  document.getElementById('sem-kpi-pontos').textContent=`${preench} / ${listaPdvs().length}`;
+  document.getElementById('sem-kpi-itens').textContent=doDia.reduce((s,p)=>s+(p.qtd||0),0).toLocaleString('pt-BR');
+  document.getElementById('sem-kpi-semana').textContent=allSemana.reduce((s,p)=>s+(p.qtd||0),0).toLocaleString('pt-BR');
+
+  const dl=document.getElementById('sem-pdv-list');
+  if(dl)dl.innerHTML=listaPdvs().map(n=>`<option value="${escSem(n)}">`).join('');
+
+  document.getElementById('sem-body').innerHTML=semLinhas.map((l,i)=>{
+    const r=l.rec;
+    const nomes=r?String(r.colab||'').split(' / '):[];
+    const f1=nomes[0]||'',f2=nomes[1]||'';
+    const ponto=l.novo
+      ?`<td><input class="sem-in" id="sem-n-${i}" type="text" list="sem-pdv-list" placeholder="Nome do ponto" autocomplete="off" style="text-align:left;" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"></td>`
+      :`<td class="sem-ponto">${escSem(l.pdv)}</td>`;
+    const por=r&&r.criado_por?` title="Registrado por ${escSem(r.criado_por)}"`:'';
+    return`<tr id="sem-tr-${i}" class="${r?'sem-row-ok':''}"${por}>
+      ${ponto}
+      <td><input class="sem-in" id="sem-q-${i}" type="number" min="1" value="${r?escSem(r.qtd):''}" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"></td>
+      <td><input class="sem-in" id="sem-h-${i}" type="time" value="${r?escSem((r.hora_inicial||'').slice(0,5)):''}" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"></td>
+      <td><div class="sem-func"><select class="sem-in" id="sem-f1-${i}" onchange="semSujo(${i})">${semOpcoesColab(ativos,f1,false)}</select><select class="sem-in" id="sem-f2-${i}" onchange="semSujo(${i})">${semOpcoesColab(ativos,f2,true)}</select></div></td>
+      <td class="sem-acoes"><button class="sem-ok" id="sem-b-${i}" onclick="salvarLinhaSemana(${i})" title="Salvar linha"><i class="ti ti-check"></i></button> <button class="btn-del" onclick="limparLinhaSemana(${i})" title="${r?'Limpar linha (exclui o registro)':'Limpar campos'}"><i class="ti ti-trash"></i></button></td>
+    </tr>`;
+  }).join('');
+
+  semLinhas.forEach((l,i)=>{
+    const g=guardados[semChave(l)];if(!g)return;
+    if(l.novo)semSetVal('sem-n-'+i,g.n);
+    semSetVal('sem-q-'+i,g.q);semSetVal('sem-h-'+i,g.h);
+    semSetSelect('sem-f1-'+i,g.f1);semSetSelect('sem-f2-'+i,g.f2);
+    semSujo(i);
+  });
 }
 
+function selecionarDiaSemana(i){
+  if(i===semDia)return;
+  if(!semConfirmarDescarte())return;
+  semDia=i;semDirty=new Set();semLinhaNova=false;
+  renderSemana();
+}
 function mudarSemana(n){
+  if(!semConfirmarDescarte())return;
   initSemana();
+  semDirty=new Set();semLinhaNova=false;
   semanaIni=new Date(semanaIni.getFullYear(),semanaIni.getMonth(),semanaIni.getDate()+7*n);
   carregarSemana(true);
 }
 function irParaHojeSemana(){
+  if(!semConfirmarDescarte())return;
+  semDirty=new Set();semLinhaNova=false;
   semanaIni=segundaDaSemana(new Date());
+  semDia=diaDeHoje();
   carregarSemana(true);
 }
 
-function novoPedidoNoDia(iso){
-  cancelarEdicaoSemana();
-  document.getElementById('sem-data').value=iso;
-  document.getElementById('sem-form-card').scrollIntoView({behavior:'smooth',block:'center'});
-  document.getElementById('sem-pdv').focus();
+function adicionarPontoSemana(){
+  if(!semLinhaNova){semLinhaNova=true;renderSemana();}
+  const el=document.getElementById('sem-n-'+(semLinhas.length-1));
+  if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.focus();}
 }
 
-async function salvarSemana(){
-  const data=document.getElementById('sem-data').value;
-  const pdvDigitado=document.getElementById('sem-pdv').value.trim().replace(/\s+/g,' ');
-  const colab=document.getElementById('sem-colab').value;
-  const qtd=parseInt(document.getElementById('sem-qtd').value,10);
-  const hora=document.getElementById('sem-hora').value;
-  const editId=document.getElementById('sem-edit-id').value;
-  const errEl=document.getElementById('sem-form-error'),okMsg=document.getElementById('sem-msg-ok'),errMsg=document.getElementById('sem-msg-err');
-  errEl.style.display=okMsg.style.display=errMsg.style.display='none';
-  if(!data||!pdvDigitado||!colab||!qtd||qtd<=0||!hora){errEl.textContent='Preencha todos os campos.';errEl.style.display='block';return;}
-  const[y,m,d]=data.split('-').map(Number);
-  if(new Date(y,m-1,d).getDay()===0){errEl.textContent='Escolha um dia de segunda a sábado.';errEl.style.display='block';return;}
-  // mantém a grafia de um ponto de venda já cadastrado (ignora maiúsculas/minúsculas)
-  const pdv=[...pdvsConhecidos].find(n=>n.toLowerCase()===pdvDigitado.toLowerCase())||pdvDigitado;
-  const btn=document.getElementById('btn-salvar-sem');
-  btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:14px;height:14px;border-width:2px;"></div> Salvando...';
+async function salvarLinhaSemana(i){
+  const l=semLinhas[i];if(!l)return;
+  const iso=isoLocal(diasDaSemana()[semDia]);
+  const nomeDigitado=l.novo?semVal('sem-n-'+i).trim().replace(/\s+/g,' '):l.pdv;
+  const qtd=parseInt(semVal('sem-q-'+i),10);
+  const hora=semVal('sem-h-'+i);
+  const f1=semVal('sem-f1-'+i),f2=semVal('sem-f2-'+i);
+  if(!nomeDigitado){semMsg('err','Informe o nome do ponto de venda.');return;}
+  if(!qtd||qtd<=0){semMsg('err',`${nomeDigitado}: informe a quantidade.`);return;}
+  if(!hora){semMsg('err',`${nomeDigitado}: informe o horário inicial.`);return;}
+  if(!f1){semMsg('err',`${nomeDigitado}: selecione o funcionário.`);return;}
+  if(f2&&f2===f1){semMsg('err',`${nomeDigitado}: os dois funcionários não podem ser a mesma pessoa.`);return;}
+  const colab=f2?`${f1} / ${f2}`:f1;
+  // ponto novo: reaproveita a grafia de um ponto já existente; senão grava em maiúsculas, como na folha
+  const pdv=l.novo?(listaPdvs().find(n=>n.toLowerCase()===nomeDigitado.toLowerCase())||nomeDigitado.toUpperCase()):l.pdv;
+  const btn=document.getElementById('sem-b-'+i);
+  if(btn)btn.disabled=true;
   try{
     let error;
-    if(editId){
-      ({error}=await sb.from('pedidos_semana').update({data,pdv,colab,qtd,hora_inicial:hora}).eq('id',editId));
+    if(l.rec){
+      ({error}=await sb.from('pedidos_semana').update({pdv,colab,qtd,hora_inicial:hora}).eq('id',l.rec.id));
     }else{
-      ({error}=await sb.from('pedidos_semana').insert({data,pdv,colab,qtd,hora_inicial:hora,criado_por:USUARIO_EMAIL||null}));
+      ({error}=await sb.from('pedidos_semana').insert({data:iso,pdv,colab,qtd,hora_inicial:hora,criado_por:USUARIO_EMAIL||null}));
     }
     if(error)throw error;
-    await registrarLog(editId?'editou pedido da semana':'cadastrou pedido da semana',`${pdv} — ${colab} — ${qtd} itens — ${fmtDiaMes(new Date(y,m-1,d))}`,USUARIO_EMAIL);
+    await registrarLog(l.rec?'editou pedido da semana':'cadastrou pedido da semana',`${pdv} — ${colab} — ${qtd} itens — ${fmtDiaMes(diasDaSemana()[semDia])}`,USUARIO_EMAIL);
     pdvsConhecidos.add(pdv);
-    cancelarEdicaoSemana();
-    okMsg.style.display='flex';setTimeout(()=>okMsg.style.display='none',3500);
-    semanaIni=segundaDaSemana(new Date(y,m-1,d));
+    semDirty.delete(i);
+    if(l.novo)semLinhaNova=false;
+    semMsg('ok',`${pdv}: salvo!`);
     await carregarSemana(true);
   }catch(e){
     const msg=(e&&(e.message||e.details))||'Erro ao salvar';
-    document.getElementById('sem-msg-err-txt').textContent=/pedidos_semana|PGRST205|42P01/i.test(msg)?'A tabela pedidos_semana ainda não existe no Supabase.':msg;
-    errMsg.style.display='flex';
-  }finally{
-    btn.disabled=false;
-    btn.innerHTML='<i class="ti ti-device-floppy"></i> '+(document.getElementById('sem-edit-id').value?'Atualizar':'Salvar');
+    semMsg('err',/pedidos_semana|PGRST205|42P01/i.test(msg)?'A tabela pedidos_semana ainda não existe no Supabase.':msg);
+    if(btn)btn.disabled=false;
   }
 }
 
-function editarSemana(id){
-  const p=allSemana.find(x=>String(x.id)===String(id));if(!p)return;
-  document.getElementById('sem-data').value=p.data||'';
-  document.getElementById('sem-pdv').value=p.pdv||'';
-  setSemColab(p.colab);
-  document.getElementById('sem-qtd').value=p.qtd||'';
-  document.getElementById('sem-hora').value=(p.hora_inicial||'').slice(0,5);
-  document.getElementById('sem-edit-id').value=p.id;
-  document.getElementById('sem-form-title').innerHTML='<i class="ti ti-pencil"></i> Editando pedido';
-  document.getElementById('btn-salvar-sem').innerHTML='<i class="ti ti-device-floppy"></i> Atualizar';
-  document.getElementById('sem-form-error').style.display='none';
-  document.getElementById('sem-form-card').scrollIntoView({behavior:'smooth',block:'center'});
-}
-
-function cancelarEdicaoSemana(){
-  ['sem-pdv','sem-qtd','sem-hora','sem-edit-id'].forEach(id=>document.getElementById(id).value='');
-  const sel=document.getElementById('sem-colab');
-  sel.querySelectorAll('option[data-temp="1"]').forEach(o=>o.remove());
-  sel.value='';
-  document.getElementById('sem-form-title').innerHTML='<i class="ti ti-plus"></i> Novo pedido';
-  document.getElementById('btn-salvar-sem').innerHTML='<i class="ti ti-device-floppy"></i> Salvar';
-  document.getElementById('sem-form-error').style.display='none';
-}
-
-async function deletarSemana(id){
-  if(!confirm('Excluir este pedido?'))return;
-  const p=allSemana.find(x=>String(x.id)===String(id))||{};
+async function limparLinhaSemana(i){
+  const l=semLinhas[i];if(!l)return;
+  if(!l.rec){
+    // linha ainda não salva: só descarta o que foi digitado
+    if(l.novo)semLinhaNova=false;
+    semDirty.delete(i);
+    renderSemana();
+    return;
+  }
+  if(!confirm(`Limpar a linha de ${l.pdv}? O registro será excluído.`))return;
   try{
-    const{error}=await sb.from('pedidos_semana').delete().eq('id',id);
+    const{error}=await sb.from('pedidos_semana').delete().eq('id',l.rec.id);
     if(error)throw error;
-    await registrarLog('excluiu pedido da semana',`${p.pdv||'?'} — ${p.colab||'?'} — ${p.qtd||0} itens`,USUARIO_EMAIL);
-    if(document.getElementById('sem-edit-id').value===String(id))cancelarEdicaoSemana();
-    carregarSemana(true);
-  }catch(e){alert('Erro: '+((e&&e.message)||e));}
+    await registrarLog('excluiu pedido da semana',`${l.pdv} — ${l.rec.colab||'?'} — ${l.rec.qtd||0} itens`,USUARIO_EMAIL);
+    semDirty.delete(i);
+    await carregarSemana(true);
+  }catch(e){semMsg('err','Erro ao excluir: '+((e&&e.message)||e));}
 }
 
 // INICIALIZAR
