@@ -1543,7 +1543,7 @@ function mostrarApp(user){
     ['nav-label-principal','tab-dash','tab-pedidos','tab-colaboradores','nav-label-relatorios','tab-analise','tab-comparativo','tab-erros','nav-label-sistema','tab-log'].forEach(id=>{
       const el=document.getElementById(id);if(el)el.style.display='none';
     });
-    document.querySelector('.sidebar-name').textContent='Direcionamento';
+    document.querySelector('.sidebar-name').textContent='Operação';
     document.querySelector('.sidebar-sub').textContent='VX Case';
   }
 
@@ -1555,7 +1555,7 @@ function mostrarApp(user){
   buildHeatmapMes();
 
   if(RESTRITO){
-    showTab('direcionamento');
+    showTab('semana'); // tela inicial do login restrito: cadastro de pedidos da semana
   }else{
     carregarErros();
   }
