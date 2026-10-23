@@ -236,6 +236,13 @@
     .sem-table td.sem-ponto{font-weight:600;text-transform:uppercase;padding:6px 10px;white-space:nowrap;}
     .sem-table tr.sem-row-ok td{background:rgba(29,158,117,.07);}
     .sem-table tr.sem-sujo td{background:rgba(239,159,39,.12);}
+    .sem-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:7px;vertical-align:middle;}
+    .sem-table td.sem-pisca{animation:semPisca 1.5s ease-in-out infinite;}
+    .sem-table td.sem-pisca .sem-dot{animation:semPiscaDot 1.5s ease-in-out infinite;}
+    .sem-table tr.sem-sujo td.sem-pisca{animation:none;} /* para de piscar enquanto a linha está sendo preenchida */
+    @keyframes semPisca{0%,100%{background:transparent;}50%{background:rgba(29,158,117,.32);}}
+    @keyframes semPiscaDot{0%,100%{transform:scale(1);}50%{transform:scale(1.5);}}
+    @media (prefers-reduced-motion:reduce){.sem-table td.sem-pisca,.sem-table td.sem-pisca .sem-dot{animation:none;} .sem-table td.sem-pisca{background:rgba(29,158,117,.2);}}
     .sem-in{width:100%;font-size:13px;padding:5px 7px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg-primary);color:var(--text-primary);text-align:center;}
     .sem-in:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 2px rgba(29,158,117,.15);}
     .sem-acoes{width:118px;text-align:center;white-space:nowrap;}
@@ -2463,6 +2470,10 @@ const PDVS_POR_DIA=[
   ['RIO LOJA 115','RIO LOJA 106','RIO Q.P12','RIO LOJA 248A','RIO Q.P39','RIO SUL','BH SHOPP LOJA 08','BH SHOPP LOJA NL26','BH SHOPP Q.MA01','BH SAVASSI','BH BOULEVARD LOJA 1049','BH DEL REY LOJA SDR3025','BH DEL REY Q.SDRT1690','BH DIAMOND'],
   ['VILA VELHA LOJA 1031','VILA VELHA LOJA 104E','VILA VELHA LOJA 1071','VILA VELHA Q.206','VILA VELHA Q.2021','VILA VELHA Q.121','VITORIA LOJA 116','VITORIA LOJA 410/411','VITORIA Q.134','VITORIA Q.118','SERRA LOJA 301']
 ];
+// pontos principais: piscam em verde na folha enquanto ainda não foram preenchidos
+const PDVS_PRINCIPAIS=new Set(['BELEM LOJA 459','BELEM Q. 07','MANAUS LOJA 90','MANAUS AMAZONAS Q. A39','GOIANIA LOJA 438','GOIANIA SHOPP LOJA 217','NATAL LOJA 378','NATAL MIDWAY','FORTALEZA LOJA 617','FORTALEZA RIOMAR LOJA 1173','ARACAJU LOJA 143 (PRINCIPAL)','ARACAJU Q.25 (PRINCIPAL)','MACEIÓ PARQUE LOJA 1042','MACEIÓ PARQUE LOJA 3080','MACEIÓ LOJA 308','FEIRA LOJA 213','RIO DESIGN','TIJUCA','NITEROI LOJA SPN313','BOTAFOGO','RECIFE RIOMAR LOJA 1061','RECIFE SHOPP LOJA PC145','TAMBORE','BRASILIA','CAMPINAS','CONQUISTA (PRIORIDADE)','RIO LOJA 115','BH SHOPP LOJA 08','BH BOULEVARD LOJA 1049','BH DEL REY LOJA SDR3025','BH DIAMOND','BH SAVASSI','VILA VELHA LOJA 1031'].map(n=>n.toLowerCase()));
+function semEhPrincipal(pdv){return PDVS_PRINCIPAIS.has(String(pdv||'').trim().toLowerCase());}
+function semPontoHTML(pdv){return (semEhPrincipal(pdv)?'<span class="sem-dot"></span>':'')+escSem(pdv);}
 let allSemana=[],semanaIni=null,semDia=null,semanaHash=null,semanaReq=0;
 // pontos extras (fora da lista do dia) já usados no sistema, separados por dia da semana
 let extrasPdv=[new Set(),new Set(),new Set(),new Set(),new Set(),new Set()],pdvsCarregados=false;
@@ -2576,7 +2587,7 @@ function semAbrirPonto(i,valor){
 }
 function semFecharPonto(i){
   const td=document.getElementById('sem-pt-'+i),l=semLinhas[i];
-  if(td&&l)td.innerHTML=escSem(l.pdv);
+  if(td&&l)td.innerHTML=semPontoHTML(l.pdv);
 }
 function semSujo(i){
   semDirty.add(i);
@@ -2774,7 +2785,7 @@ function renderSemana(){
     const bloq=r?' disabled':''; // linha já salva fica travada até clicar em editar
     const ponto=l.novo
       ?`<td><input class="sem-in" id="sem-n-${i}" type="text" list="sem-pdv-list" placeholder="Nome do ponto" autocomplete="off" style="text-align:left;" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"></td>`
-      :`<td class="sem-ponto" id="sem-pt-${i}">${escSem(l.pdv)}</td>`;
+      :`<td class="sem-ponto${semEhPrincipal(l.pdv)?' sem-principal':''}${semEhPrincipal(l.pdv)&&!r?' sem-pisca':''}" id="sem-pt-${i}"${semEhPrincipal(l.pdv)?' title="Ponto principal"':''}>${semPontoHTML(l.pdv)}</td>`;
     const por=r&&r.criado_por?` title="Registrado por ${escSem(r.criado_por)}"`:'';
     return`<tr id="sem-tr-${i}" class="${r?'sem-row-ok':''}"${por}>
       ${ponto}
