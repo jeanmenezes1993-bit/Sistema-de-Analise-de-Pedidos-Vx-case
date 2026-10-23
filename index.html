@@ -255,13 +255,8 @@
     @keyframes semPisca{0%,100%{background-color:rgba(29,158,117,0);}50%{background-color:rgba(29,158,117,.5);}}
     @-webkit-keyframes semPiscaDot{0%,100%{-webkit-transform:scale(1);transform:scale(1);opacity:.55;}50%{-webkit-transform:scale(1.6);transform:scale(1.6);opacity:1;}}
     @keyframes semPiscaDot{0%,100%{transform:scale(1);opacity:.55;}50%{transform:scale(1.6);opacity:1;}}
-    /* rótulo "PONTO PRINCIPAL" em subrelevo, afastado do nome (canto direito da célula), no mesmo ritmo da linha */
     .sem-ponto-in{display:flex;align-items:center;}
     .sem-ponto-in .sem-nome{white-space:nowrap;}
-    .sem-rotulo{margin-left:auto;padding-left:44px;white-space:nowrap;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#0A5A43;text-shadow:0 1px 0 rgba(255,255,255,.95),0 -1px 0 rgba(0,0,0,.3);-webkit-animation:semRotulo 1.2s ease-in-out infinite;animation:semRotulo 1.2s ease-in-out infinite;}
-    body.dark .sem-rotulo{color:#7FE0BC;text-shadow:0 1px 0 rgba(0,0,0,.75),0 -1px 0 rgba(255,255,255,.18);}
-    @-webkit-keyframes semRotulo{0%,100%{opacity:.65;}50%{opacity:1;}}
-    @keyframes semRotulo{0%,100%{opacity:.65;}50%{opacity:1;}}
     .sem-in{width:100%;font-size:13px;padding:5px 7px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg-primary);color:var(--text-primary);text-align:center;}
     .sem-in:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 2px rgba(29,158,117,.15);}
     .sem-acoes{width:118px;text-align:center;white-space:nowrap;}
@@ -910,7 +905,7 @@
         <div class="sem-sheet-date">Data: <input type="text" class="sem-data-in" id="sem-data-input" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" title="Digite a data (dd/mm/aaaa) e tecle Enter" onfocus="this.select()" onchange="irParaDataSemana(this.value)" onkeydown="if(event.key==='Enter')this.blur()"></div>
         <div class="sem-wrap">
           <table class="sem-table">
-            <thead><tr><th style="width:34%;">Ponto</th><th style="width:12%;">Quantidade</th><th style="width:14%;">Horário inicial</th><th>Funcionário</th><th style="width:118px;"></th></tr></thead>
+            <thead><tr><th style="width:34%;">Ponto de venda</th><th style="width:12%;">Quantidade</th><th style="width:14%;">Horário inicial</th><th>Funcionário</th><th style="width:118px;"></th></tr></thead>
             <tbody id="sem-body"></tbody>
           </table>
         </div>
@@ -2501,7 +2496,7 @@ const PDVS_PRINCIPAIS=new Set(['BELEM LOJA 459','BELEM Q. 07','MANAUS LOJA 90','
 function semEhPrincipal(pdv){return PDVS_PRINCIPAIS.has(String(pdv||'').trim().toLowerCase());}
 function semPontoHTML(pdv){
   if(!semEhPrincipal(pdv))return escSem(pdv);
-  return '<div class="sem-ponto-in"><span class="sem-dot"></span><span class="sem-nome">'+escSem(pdv)+'</span><span class="sem-rotulo">Ponto principal</span></div>';
+  return '<div class="sem-ponto-in"><span class="sem-dot"></span><span class="sem-nome">'+escSem(pdv)+'</span></div>';
 }
 let allSemana=[],semanaIni=null,semDia=null,semanaHash=null,semanaReq=0;
 // pontos extras (fora da lista do dia) já usados no sistema, separados por dia da semana
@@ -2814,7 +2809,7 @@ function renderSemana(){
     const bloq=r?' disabled':''; // linha já salva fica travada até clicar em editar
     const ponto=l.novo
       ?`<td><input class="sem-in" id="sem-n-${i}" type="text" list="sem-pdv-list" placeholder="Nome do ponto" autocomplete="off" style="text-align:left;" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"></td>`
-      :`<td class="sem-ponto${semEhPrincipal(l.pdv)?' sem-principal':''}" id="sem-pt-${i}"${semEhPrincipal(l.pdv)?' title="Ponto principal"':''}>${semPontoHTML(l.pdv)}</td>`;
+      :`<td class="sem-ponto${semEhPrincipal(l.pdv)?' sem-principal':''}" id="sem-pt-${i}">${semPontoHTML(l.pdv)}</td>`;
     const por=r&&r.criado_por?` title="Registrado por ${escSem(r.criado_por)}"`:'';
     return`<tr id="sem-tr-${i}" class="${[r?'sem-row-ok':'',semEhPrincipal(l.pdv)?'sem-pisca':''].filter(Boolean).join(' ')}"${por}>
       ${ponto}
@@ -2964,7 +2959,7 @@ async function limparLinhaSemana(i){
    Celular/tablet (atalho na tela inicial) guardam a página antiga na memória. Aqui o sistema confere se há
    versão nova: ao abrir, recarrega sozinho; ao voltar para o app, recarrega se estiver na folha da semana
    sem nada em preenchimento; nos demais casos mostra o aviso "Atualizar". */
-const APP_VERSAO='202610231535';
+const APP_VERSAO='202610231600';
 let appVersaoNova=null;
 function atualizarAgora(){
   const base=location.href.split('#')[0].split('?')[0];
