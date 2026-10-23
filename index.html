@@ -234,7 +234,6 @@
     .sem-table tr.sem-sujo td{background:rgba(239,159,39,.12);}
     .sem-in{width:100%;font-size:13px;padding:5px 7px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg-primary);color:var(--text-primary);text-align:center;}
     .sem-in:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 2px rgba(29,158,117,.15);}
-    .sem-func{display:flex;gap:6px;} .sem-func .sem-in{text-align:left;}
     .sem-acoes{width:84px;text-align:center;white-space:nowrap;}
     .sem-ok{background:var(--green);border:none;color:#fff;border-radius:var(--radius-sm);width:30px;height:28px;cursor:pointer;font-size:15px;}
     .sem-ok:hover{background:var(--green-dark);} .sem-ok:disabled{background:#9FE1CB;cursor:not-allowed;}
@@ -883,7 +882,7 @@
         </div>
         <div class="sem-rodape">
           <button onclick="adicionarPontoSemana()"><i class="ti ti-plus"></i> Adicionar outro ponto</button>
-          <span class="sem-dica">Preencha a linha e clique em <b>✓</b> (ou tecle Enter) para salvar. Em caso de dois funcionários, use o segundo campo.</span>
+          <span class="sem-dica">Preencha a linha e clique em <b>✓</b> (ou tecle Enter) para salvar.</span>
         </div>
       </div>
       <datalist id="sem-pdv-list"></datalist>
@@ -2476,10 +2475,10 @@ function semSetSelect(id,nome){
   el.value=nome||'';
 }
 function colabsAtivosSemana(){return allColabs.filter(c=>c.status==='ativo'||!c.status).map(c=>c.nome);}
-function semOpcoesColab(ativos,sel,comNenhum){
+function semOpcoesColab(ativos,sel){
   const lista=ativos.slice();
-  if(sel&&!lista.includes(sel))lista.push(sel); // inativo/removido: mantém o nome já salvo
-  return `<option value="">${comNenhum?'— (nenhum)':'Selecione...'}</option>`+lista.map(n=>`<option value="${escSem(n)}"${n===sel?' selected':''}>${escSem(n)}${ativos.includes(n)?'':' (inativo)'}</option>`).join('');
+  if(sel&&!lista.includes(sel))lista.push(sel); // inativo/removido (ou registro antigo com dois nomes): mantém o valor já salvo
+  return '<option value="">Selecione...</option>'+lista.map(n=>`<option value="${escSem(n)}"${n===sel?' selected':''}>${escSem(n)}${ativos.includes(n)||n.includes(' / ')?'':' (inativo)'}</option>`).join('');
 }
 
 // pontos de venda da lista: os padrões da folha + os que já foram usados no sistema
@@ -2536,7 +2535,7 @@ function semCapturarSujos(){
   const m={};
   semDirty.forEach(i=>{
     const l=semLinhas[i];if(!l)return;
-    m[semChave(l)]={n:semVal('sem-n-'+i),q:semVal('sem-q-'+i),h:semVal('sem-h-'+i),f1:semVal('sem-f1-'+i),f2:semVal('sem-f2-'+i)};
+    m[semChave(l)]={n:semVal('sem-n-'+i),q:semVal('sem-q-'+i),h:semVal('sem-h-'+i),f1:semVal('sem-f1-'+i)};
   });
   return m;
 }
@@ -2609,8 +2608,7 @@ function renderSemana(){
 
   document.getElementById('sem-body').innerHTML=semLinhas.map((l,i)=>{
     const r=l.rec;
-    const nomes=r?String(r.colab||'').split(' / '):[];
-    const f1=nomes[0]||'',f2=nomes[1]||'';
+    const f1=r?String(r.colab||''):'';
     const ponto=l.novo
       ?`<td><input class="sem-in" id="sem-n-${i}" type="text" list="sem-pdv-list" placeholder="Nome do ponto" autocomplete="off" style="text-align:left;" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"></td>`
       :`<td class="sem-ponto">${escSem(l.pdv)}</td>`;
@@ -2619,7 +2617,7 @@ function renderSemana(){
       ${ponto}
       <td><input class="sem-in" id="sem-q-${i}" type="number" min="1" value="${r?escSem(r.qtd):''}" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"></td>
       <td><input class="sem-in" id="sem-h-${i}" type="time" value="${r?escSem((r.hora_inicial||'').slice(0,5)):''}" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"></td>
-      <td><div class="sem-func"><select class="sem-in" id="sem-f1-${i}" onchange="semSujo(${i})">${semOpcoesColab(ativos,f1,false)}</select><select class="sem-in" id="sem-f2-${i}" onchange="semSujo(${i})">${semOpcoesColab(ativos,f2,true)}</select></div></td>
+      <td><select class="sem-in" id="sem-f1-${i}" style="text-align:left;" onchange="semSujo(${i})">${semOpcoesColab(ativos,f1)}</select></td>
       <td class="sem-acoes"><button class="sem-ok" id="sem-b-${i}" onclick="salvarLinhaSemana(${i})" title="Salvar linha"><i class="ti ti-check"></i></button> <button class="btn-del" onclick="limparLinhaSemana(${i})" title="${r?'Limpar linha (exclui o registro)':'Limpar campos'}"><i class="ti ti-trash"></i></button></td>
     </tr>`;
   }).join('');
@@ -2628,7 +2626,7 @@ function renderSemana(){
     const g=guardados[semChave(l)];if(!g)return;
     if(l.novo)semSetVal('sem-n-'+i,g.n);
     semSetVal('sem-q-'+i,g.q);semSetVal('sem-h-'+i,g.h);
-    semSetSelect('sem-f1-'+i,g.f1);semSetSelect('sem-f2-'+i,g.f2);
+    semSetSelect('sem-f1-'+i,g.f1);
     semSujo(i);
   });
 }
@@ -2666,13 +2664,11 @@ async function salvarLinhaSemana(i){
   const nomeDigitado=l.novo?semVal('sem-n-'+i).trim().replace(/\s+/g,' '):l.pdv;
   const qtd=parseInt(semVal('sem-q-'+i),10);
   const hora=semVal('sem-h-'+i);
-  const f1=semVal('sem-f1-'+i),f2=semVal('sem-f2-'+i);
+  const colab=semVal('sem-f1-'+i);
   if(!nomeDigitado){semMsg('err','Informe o nome do ponto de venda.');return;}
   if(!qtd||qtd<=0){semMsg('err',`${nomeDigitado}: informe a quantidade.`);return;}
   if(!hora){semMsg('err',`${nomeDigitado}: informe o horário inicial.`);return;}
-  if(!f1){semMsg('err',`${nomeDigitado}: selecione o funcionário.`);return;}
-  if(f2&&f2===f1){semMsg('err',`${nomeDigitado}: os dois funcionários não podem ser a mesma pessoa.`);return;}
-  const colab=f2?`${f1} / ${f2}`:f1;
+  if(!colab){semMsg('err',`${nomeDigitado}: selecione o funcionário.`);return;}
   // ponto novo: reaproveita a grafia de um ponto já existente; senão grava em maiúsculas, como na folha
   const pdv=l.novo?(listaPdvs().find(n=>n.toLowerCase()===nomeDigitado.toLowerCase())||nomeDigitado.toUpperCase()):l.pdv;
   const btn=document.getElementById('sem-b-'+i);
