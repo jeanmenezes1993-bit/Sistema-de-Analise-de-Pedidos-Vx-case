@@ -224,7 +224,8 @@
     .sem-sheet{background:var(--bg-primary);border:1px solid var(--border-md);border-radius:var(--radius-lg);overflow:hidden;}
     .sem-sheet-title{text-align:center;font-weight:700;font-size:15px;padding:11px 10px;border-bottom:1px solid var(--border-md);letter-spacing:.03em;text-transform:uppercase;}
     .sem-sheet-date{text-align:center;font-size:14px;padding:8px 10px;border-bottom:1px solid var(--border-md);color:var(--text-secondary);}
-    .sem-sheet-date strong{color:var(--text-primary);}
+    .sem-data-in{font-size:14px;font-weight:700;padding:3px 8px;margin-left:4px;border:1px solid var(--border-md);border-radius:var(--radius-sm);background:var(--bg-primary);color:var(--text-primary);cursor:pointer;}
+    .sem-data-in:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 2px rgba(29,158,117,.15);}
     .sem-wrap{overflow-x:auto;}
     .sem-table{width:100%;border-collapse:collapse;font-size:13px;min-width:760px;}
     .sem-table th{text-align:center;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:9px 8px;background:var(--bg-secondary);border:1px solid var(--border-md);}
@@ -234,7 +235,10 @@
     .sem-table tr.sem-sujo td{background:rgba(239,159,39,.12);}
     .sem-in{width:100%;font-size:13px;padding:5px 7px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg-primary);color:var(--text-primary);text-align:center;}
     .sem-in:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 2px rgba(29,158,117,.15);}
-    .sem-acoes{width:84px;text-align:center;white-space:nowrap;}
+    .sem-acoes{width:118px;text-align:center;white-space:nowrap;}
+    .sem-btns{display:flex;gap:4px;justify-content:center;}
+    .sem-btns .btn-edit,.sem-btns .btn-del{width:30px;height:28px;padding:0;margin:0;display:inline-flex;align-items:center;justify-content:center;font-size:14px;}
+    .sem-in:disabled{background:transparent;color:var(--text-primary);opacity:1;cursor:default;border-color:transparent;-webkit-appearance:none;appearance:none;}
     .sem-ok{background:var(--green);border:none;color:#fff;border-radius:var(--radius-sm);width:30px;height:28px;cursor:pointer;font-size:15px;}
     .sem-ok:hover{background:var(--green-dark);} .sem-ok:disabled{background:#9FE1CB;cursor:not-allowed;}
     .sem-rodape{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 12px;}
@@ -873,10 +877,10 @@
 
       <div class="sem-sheet" id="sem-sheet">
         <div class="sem-sheet-title" id="sem-sheet-title"></div>
-        <div class="sem-sheet-date" id="sem-sheet-date"></div>
+        <div class="sem-sheet-date">Data: <input type="date" class="sem-data-in" id="sem-data-input" title="Clique para escolher outra data (segunda a sábado)" onchange="irParaDataSemana(this.value)"></div>
         <div class="sem-wrap">
           <table class="sem-table">
-            <thead><tr><th style="width:28%;">Ponto</th><th style="width:13%;">Quantidade</th><th style="width:15%;">Horário inicial</th><th>Funcionário</th><th style="width:84px;"></th></tr></thead>
+            <thead><tr><th style="width:28%;">Ponto</th><th style="width:13%;">Quantidade</th><th style="width:15%;">Horário inicial</th><th>Funcionário</th><th style="width:118px;"></th></tr></thead>
             <tbody id="sem-body"></tbody>
           </table>
         </div>
@@ -2544,10 +2548,23 @@ function semMsg(tipo,txt){
   semMsgTimer=setTimeout(()=>{ok.style.display='none';er.style.display='none';},tipo==='ok'?3000:7000);
 }
 
+// libera os campos de uma linha já salva (que fica travada, com aparência de texto, até clicar no lápis)
+function semDesbloquear(i){
+  ['sem-q-','sem-h-','sem-f1-'].forEach(p=>{const el=document.getElementById(p+i);if(el)el.disabled=false;});
+  const b=document.getElementById('sem-b-'+i);if(b)b.disabled=false;
+  const e=document.getElementById('sem-e-'+i);if(e)e.title='Cancelar edição';
+}
 function semSujo(i){
   semDirty.add(i);
+  semDesbloquear(i);
   const tr=document.getElementById('sem-tr-'+i);
   if(tr){tr.classList.add('sem-sujo');tr.classList.remove('sem-row-ok');}
+}
+function editarLinhaSemana(i){
+  const l=semLinhas[i];if(!l||!l.rec)return;
+  if(semDirty.has(i)){semDirty.delete(i);renderSemana();return;} // já estava em edição: cancela e volta ao que está salvo
+  semSujo(i);
+  const q=document.getElementById('sem-q-'+i);if(q)q.focus();
 }
 function semTecla(ev,i){
   if(ev.key==='Enter'){ev.preventDefault();salvarLinhaSemana(i);}
@@ -2617,7 +2634,7 @@ function renderSemana(){
     return`<button class="sem-tab${i===semDia?' ativo':''}${isoX===hoje?' hoje':''}" onclick="selecionarDiaSemana(${i})">${DIAS_SEMANA[i]}<small>${fmtDiaMes(x)} · ${n} pedido(s)</small></button>`;
   }).join('');
   document.getElementById('sem-sheet-title').textContent='Lista de pedidos diário — '+DIAS_LONGO[semDia];
-  document.getElementById('sem-sheet-date').innerHTML='Data: <strong>'+fmtDataCurta(d)+'</strong>';
+  semSetVal('sem-data-input',iso);
 
   const doDia=allSemana.filter(p=>p.data===iso);
   const preench=new Set(doDia.map(p=>(p.pdv||'').trim().toLowerCase())).size;
@@ -2631,16 +2648,17 @@ function renderSemana(){
   document.getElementById('sem-body').innerHTML=semLinhas.map((l,i)=>{
     const r=l.rec;
     const f1=r?String(r.colab||''):'';
+    const bloq=r?' disabled':''; // linha já salva fica travada até clicar em editar
     const ponto=l.novo
       ?`<td><input class="sem-in" id="sem-n-${i}" type="text" list="sem-pdv-list" placeholder="Nome do ponto" autocomplete="off" style="text-align:left;" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"></td>`
       :`<td class="sem-ponto">${escSem(l.pdv)}</td>`;
     const por=r&&r.criado_por?` title="Registrado por ${escSem(r.criado_por)}"`:'';
     return`<tr id="sem-tr-${i}" class="${r?'sem-row-ok':''}"${por}>
       ${ponto}
-      <td><input class="sem-in" id="sem-q-${i}" type="number" min="1" value="${r?escSem(r.qtd):''}" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"></td>
-      <td><input class="sem-in" id="sem-h-${i}" type="time" value="${r?escSem((r.hora_inicial||'').slice(0,5)):''}" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"></td>
-      <td><select class="sem-in" id="sem-f1-${i}" style="text-align:left;" onchange="semSujo(${i})">${semOpcoesColab(ativos,f1)}</select></td>
-      <td class="sem-acoes"><button class="sem-ok" id="sem-b-${i}" onclick="salvarLinhaSemana(${i})" title="Salvar linha"><i class="ti ti-check"></i></button> <button class="btn-del" onclick="limparLinhaSemana(${i})" title="${r?'Limpar linha (exclui o registro)':'Limpar campos'}"><i class="ti ti-trash"></i></button></td>
+      <td><input class="sem-in" id="sem-q-${i}" type="number" min="1" value="${r?escSem(r.qtd):''}" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"${bloq}></td>
+      <td><input class="sem-in" id="sem-h-${i}" type="time" value="${r?escSem((r.hora_inicial||'').slice(0,5)):''}" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"${bloq}></td>
+      <td><select class="sem-in" id="sem-f1-${i}" style="text-align:left;" onchange="semSujo(${i})"${bloq}>${semOpcoesColab(ativos,f1)}</select></td>
+      <td class="sem-acoes"><div class="sem-btns"><button class="sem-ok" id="sem-b-${i}" onclick="salvarLinhaSemana(${i})" title="Salvar linha"${bloq}><i class="ti ti-check"></i></button><button class="btn-edit" id="sem-e-${i}" onclick="editarLinhaSemana(${i})" title="Editar linha"${r?'':' style="visibility:hidden;"'}><i class="ti ti-pencil"></i></button><button class="btn-del" onclick="limparLinhaSemana(${i})" title="${r?'Limpar linha (exclui o registro)':'Limpar campos'}"><i class="ti ti-trash"></i></button></div></td>
     </tr>`;
   }).join('');
 
@@ -2666,6 +2684,20 @@ function mudarSemana(n){
   initSemana();
   semDirty=new Set();semLinhaNova=false;
   semanaIni=new Date(semanaIni.getFullYear(),semanaIni.getMonth(),semanaIni.getDate()+7*n);
+  carregarSemana(true);
+}
+// campo "Data" da folha: ao escolher outra data, abre o dia correspondente (com os pontos desse dia da semana)
+function irParaDataSemana(v){
+  initSemana();
+  const atual=isoLocal(diasDaSemana()[semDia]);
+  if(!v||v===atual){semSetVal('sem-data-input',atual);return;}
+  const di=diaIndiceDaData(v);
+  if(di<0){semMsg('err','Escolha uma data de segunda a sábado.');semSetVal('sem-data-input',atual);return;}
+  if(!semConfirmarDescarte()){semSetVal('sem-data-input',atual);return;}
+  const[y,m,d]=v.split('-').map(Number);
+  semDirty=new Set();semLinhaNova=false;
+  semanaIni=segundaDaSemana(new Date(y,m-1,d));
+  semDia=di;
   carregarSemana(true);
 }
 function irParaHojeSemana(){
