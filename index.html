@@ -896,7 +896,7 @@
         <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-building-store" style="color:#378ADD;"></i></div><div class="kpi-label">Pontos preenchidos no dia</div><div class="kpi-value" id="sem-kpi-pontos">—</div></div>
         <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-package" style="color:#1D9E75;"></i></div><div class="kpi-label">Itens no dia</div><div class="kpi-value" id="sem-kpi-itens">—</div></div>
         <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-calendar-week" style="color:#EF9F27;"></i></div><div class="kpi-label">Itens na semana</div><div class="kpi-value" id="sem-kpi-semana">—</div></div>
-        <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-clock-exclamation" style="color:#D98A0B;"></i></div><div class="kpi-label">Aguardando horário</div><div class="kpi-value" id="sem-kpi-aguardando">—</div></div>
+        <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-clock-exclamation" style="color:#D98A0B;"></i></div><div class="kpi-label">Aguardando funcionário/horário</div><div class="kpi-value" id="sem-kpi-aguardando">—</div></div>
       </div>
 
       <div id="sem-aviso" class="msg msg-err" style="display:none;"></div>
@@ -916,7 +916,7 @@
         </div>
         <div class="sem-rodape">
           <button onclick="adicionarPontoSemana()"><i class="ti ti-plus"></i> Adicionar outro ponto</button>
-          <span class="sem-dica">Cadastre com quantidade e funcionário no <b>✓</b> (ou tecle Enter). Depois informe o horário e valide no botão laranja.</span>
+          <span class="sem-dica">Cadastre só com a quantidade no <b>✓</b> (ou tecle Enter). Depois informe o funcionário e o horário e valide no botão laranja.</span>
         </div>
       </div>
       <div class="card" style="margin-top:18px;">
@@ -2618,7 +2618,9 @@ function semFecharPonto(i){
   const td=document.getElementById('sem-pt-'+i),l=semLinhas[i];
   if(td&&l)td.innerHTML=semPontoHTML(l.pdv);
 }
-function semPendente(l){return !!(l&&l.rec&&!l.rec.hora_inicial);} // cadastrada sem horário: só o horário fica livre
+// o que ainda falta numa linha cadastrada (só a quantidade é obrigatória no primeiro cadastro)
+function semFaltantes(rec){return [!rec.colab?'funcionário':null,!rec.hora_inicial?'horário':null].filter(Boolean);}
+function semPendente(l){return !!(l&&l.rec&&semFaltantes(l.rec).length);} // cadastrada sem funcionário e/ou horário: só o que falta fica livre
 // soHora: digitou apenas o horário de uma linha pendente (não libera quantidade nem funcionário)
 function semSujo(i,soHora){
   semDirty.add(i);
@@ -2808,7 +2810,7 @@ function renderSemana(){
   document.getElementById('sem-kpi-pontos').textContent=`${preench} / ${listaPdvs().length}`;
   document.getElementById('sem-kpi-itens').textContent=doDia.reduce((s,p)=>s+(p.qtd||0),0).toLocaleString('pt-BR');
   document.getElementById('sem-kpi-semana').textContent=allSemana.reduce((s,p)=>s+(p.qtd||0),0).toLocaleString('pt-BR');
-  document.getElementById('sem-kpi-aguardando').textContent=doDia.filter(p=>!p.hora_inicial).length;
+  document.getElementById('sem-kpi-aguardando').textContent=doDia.filter(p=>semFaltantes(p).length>0).length;
 
   const dl=document.getElementById('sem-pdv-list');
   if(dl)dl.innerHTML=listaPdvs().map(n=>`<option value="${escSem(n)}">`).join('');
@@ -2816,9 +2818,11 @@ function renderSemana(){
   document.getElementById('sem-body').innerHTML=semLinhas.map((l,i)=>{
     const r=l.rec;
     const f1=r?String(r.colab||''):'';
-    const pend=!!r&&!r.hora_inicial;               // cadastrada, aguardando o horário (segunda validação)
-    const bloq=r?' disabled':'';                   // linha já salva fica travada até clicar em editar
-    const bloqH=r&&!pend?' disabled':'';           // na linha pendente o horário fica livre
+    const falt=r?semFaltantes(r):[];
+    const pend=falt.length>0;                      // cadastrada só com a quantidade: aguardando funcionário e/ou horário (segunda validação)
+    const bloq=r?' disabled':'';                   // linha já salva fica travada até clicar em editar (a quantidade sempre)
+    const bloqF=r&&r.colab?' disabled':'';         // funcionário/horário só ficam livres se ainda não foram informados
+    const bloqH=r&&r.hora_inicial?' disabled':'';
     const bloqOk=r&&!pend?' disabled':'';          // e o botão de validar também
     const ponto=l.novo
       ?`<td><input class="sem-in" id="sem-n-${i}" type="text" list="sem-pdv-list" placeholder="Nome do ponto" autocomplete="off" style="text-align:left;" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"></td>`
@@ -2828,8 +2832,8 @@ function renderSemana(){
       ${ponto}
       <td><input class="sem-in" id="sem-q-${i}" type="number" min="1" value="${r?escSem(r.qtd):''}" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"${bloq}></td>
       <td><input class="sem-in" id="sem-h-${i}" type="time" value="${r?escSem((r.hora_inicial||'').slice(0,5)):''}" oninput="semSujo(${i},true)" onkeydown="semTecla(event,${i})"${bloqH}></td>
-      <td><select class="sem-in" id="sem-f1-${i}" style="text-align:left;" onchange="semSujo(${i})"${bloq}>${semOpcoesColab(ativos,f1)}</select>${pend?'<div class="sem-pend-txt">Aguardando horário</div>':''}</td>
-      <td class="sem-acoes"><div class="sem-btns"><button class="sem-ok${pend?' seg':''}" id="sem-b-${i}" onclick="salvarLinhaSemana(${i})" title="${pend?'Validar horário':'Salvar linha'}"${bloqOk}><i class="ti ${pend?'ti-clock-check':'ti-check'}"></i></button><button class="btn-edit" id="sem-e-${i}" onclick="editarLinhaSemana(${i})" title="${l.novo?'':(r?'Editar linha':'Editar o nome do ponto')}"${l.novo?' style="visibility:hidden;"':''}><i class="ti ti-pencil"></i></button><button class="btn-del" onclick="limparLinhaSemana(${i})" title="${r?'Limpar linha (exclui o registro)':'Limpar campos'}"><i class="ti ti-trash"></i></button></div></td>
+      <td><select class="sem-in" id="sem-f1-${i}" style="text-align:left;" onchange="semSujo(${i},true)"${bloqF}>${semOpcoesColab(ativos,f1)}</select>${pend?'<div class="sem-pend-txt">Aguardando '+falt.join(' e ')+'</div>':''}</td>
+      <td class="sem-acoes"><div class="sem-btns"><button class="sem-ok${pend?' seg':''}" id="sem-b-${i}" onclick="salvarLinhaSemana(${i})" title="${pend?'Validar '+falt.join(' e '):'Salvar linha'}"${bloqOk}><i class="ti ${pend?'ti-clock-check':'ti-check'}"></i></button><button class="btn-edit" id="sem-e-${i}" onclick="editarLinhaSemana(${i})" title="${l.novo?'':(r?'Editar linha':'Editar o nome do ponto')}"${l.novo?' style="visibility:hidden;"':''}><i class="ti ti-pencil"></i></button><button class="btn-del" onclick="limparLinhaSemana(${i})" title="${r?'Limpar linha (exclui o registro)':'Limpar campos'}"><i class="ti ti-trash"></i></button></div></td>
     </tr>`;
   }).join('');
 
@@ -2922,10 +2926,14 @@ async function salvarLinhaSemana(i){
   const colab=semVal('sem-f1-'+i);
   if(!nomeDigitado){semMsg('err','Informe o nome do ponto de venda.');return;}
   if(!qtd||qtd<=0){semMsg('err',`${nomeDigitado}: informe a quantidade.`);return;}
-  if(!colab){semMsg('err',`${nomeDigitado}: selecione o funcionário.`);return;}
-  // o horário é opcional no primeiro cadastro (quantidade + funcionário); depois ele precisa ser informado e validado
+  // no primeiro cadastro só a quantidade é obrigatória; funcionário e horário entram depois, na segunda validação
   const eraPendente=semPendente(l);
-  if(eraPendente&&!hora){semMsg('err',`${nomeDigitado}: informe o horário inicial para validar.`);return;}
+  const qInput=document.getElementById('sem-q-'+i);
+  const exigeValidar=eraPendente&&!!qInput&&qInput.disabled; // clicou no botão laranja (sem abrir a edição completa pelo lápis)
+  if(exigeValidar){
+    const falta=[];if(!colab)falta.push('selecione o funcionário');if(!hora)falta.push('informe o horário inicial');
+    if(falta.length){semMsg('err',`${nomeDigitado}: para validar, ${falta.join(' e ')}.`);return;}
+  }
   // nome digitado: reaproveita a grafia de um ponto já existente; senão grava em maiúsculas, como na folha
   const pdv=editaPonto?(listaPdvs().find(n=>n.toLowerCase()===nomeDigitado.toLowerCase())||nomeDigitado.toUpperCase()):l.pdv;
   const btn=document.getElementById('sem-b-'+i);
@@ -2933,23 +2941,25 @@ async function salvarLinhaSemana(i){
   try{
     let error;
     if(l.rec){
-      ({error}=await sb.from('pedidos_semana').update({pdv,colab,qtd,hora_inicial:hora||null}).eq('id',l.rec.id));
+      ({error}=await sb.from('pedidos_semana').update({pdv,colab:colab||null,qtd,hora_inicial:hora||null}).eq('id',l.rec.id));
     }else{
-      ({error}=await sb.from('pedidos_semana').insert({data:iso,pdv,colab,qtd,hora_inicial:hora||null,criado_por:USUARIO_EMAIL||null}));
+      ({error}=await sb.from('pedidos_semana').insert({data:iso,pdv,colab:colab||null,qtd,hora_inicial:hora||null,criado_por:USUARIO_EMAIL||null}));
     }
     if(error)throw error;
-    const acao=eraPendente?'validou horário do pedido da semana':(l.rec?'editou pedido da semana':'cadastrou pedido da semana');
-    await registrarLog(acao,`${pdv} — ${colab} — ${qtd} itens${hora?' — '+hora:' — sem horário'} — ${fmtDiaMes(diasDaSemana()[semDia])}`,USUARIO_EMAIL);
+    const faltam=[!colab?'o funcionário':'',!hora?'o horário':''].filter(Boolean).join(' e ');
+    const acao=exigeValidar?'validou funcionário e horário do pedido da semana':(l.rec?'editou pedido da semana':'cadastrou pedido da semana');
+    await registrarLog(acao,`${pdv} — ${colab||'sem funcionário'} — ${qtd} itens — ${hora||'sem horário'} — ${fmtDiaMes(diasDaSemana()[semDia])}`,USUARIO_EMAIL);
     lembrarPdv(pdv,iso);
     semDirty.delete(i);
     if(l.novo)semLinhaNova=false;
-    semMsg('ok',eraPendente?`${pdv}: horário validado!`:(hora?`${pdv}: salvo!`:`${pdv}: cadastrado. Falta informar o horário inicial.`));
+    semMsg('ok',exigeValidar?`${pdv}: validado!`:(faltam?`${pdv}: cadastrado. Falta informar ${faltam}.`:`${pdv}: salvo!`));
     await carregarSemana(true);
   }catch(e){
     const msg=(e&&(e.message||e.details))||'Erro ao salvar';
-    const exigeHorario=e&&(e.code==='23502'||(/null value/i.test(msg)&&/hora_inicial/i.test(msg)));
-    semMsg('err',exigeHorario
-      ?'O banco ainda exige o horário. Rode o SQL de ajuste no Supabase para permitir cadastrar sem horário (alter table public.pedidos_semana alter column hora_inicial drop not null).'
+    const col=((msg.match(/column "?([a-z_]+)"?/i)||[])[1]||'').toLowerCase();
+    const exigeCampo=e&&(e.code==='23502'||/null value/i.test(msg))&&(col==='colab'||col==='hora_inicial');
+    semMsg('err',exigeCampo
+      ?`O banco ainda exige ${col==='colab'?'o funcionário':'o horário'}. Rode no Supabase: alter table public.pedidos_semana alter column ${col} drop not null;`
       :(/pedidos_semana|PGRST205|42P01/i.test(msg)?'A tabela pedidos_semana ainda não existe no Supabase.':msg));
     if(btn)btn.disabled=false;
   }
@@ -2978,7 +2988,7 @@ async function limparLinhaSemana(i){
    Celular/tablet (atalho na tela inicial) guardam a página antiga na memória. Aqui o sistema confere se há
    versão nova: ao abrir, recarrega sozinho; ao voltar para o app, recarrega se estiver na folha da semana
    sem nada em preenchimento; nos demais casos mostra o aviso "Atualizar". */
-const APP_VERSAO='202610261125';
+const APP_VERSAO='202610261615';
 let appVersaoNova=null;
 function atualizarAgora(){
   const base=location.href.split('#')[0].split('?')[0];
