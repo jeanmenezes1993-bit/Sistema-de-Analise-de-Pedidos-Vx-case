@@ -913,8 +913,6 @@
         <span class="sem-export-lbl">Folha do dia</span>
         <button class="btn-export pdf" onclick="semExportar('dia','pdf')" title="Baixar a folha deste dia em PDF"><i class="ti ti-file-type-pdf"></i> PDF</button>
         <button class="btn-export excel" onclick="semExportar('dia','xlsx')" title="Baixar a folha deste dia em Excel"><i class="ti ti-file-spreadsheet"></i> Excel</button>
-        <button class="btn-export" onclick="semImprimir(false)" title="Imprimir a folha deste dia, com o que já foi lançado"><i class="ti ti-printer"></i> Imprimir</button>
-        <button class="btn-export" onclick="semImprimir(true)" title="Imprimir a folha em branco, com os pontos do dia, para preencher à mão"><i class="ti ti-file-text"></i> Folha em branco</button>
         <span class="sem-export-sep"></span>
         <span class="sem-export-lbl">Semana inteira</span>
         <button class="btn-export pdf" onclick="semExportar('semana','pdf')" title="Baixar a semana em PDF (resumo + uma página por dia)"><i class="ti ti-file-type-pdf"></i> PDF</button>
@@ -3205,7 +3203,7 @@ function semExportar(escopo,tipo){
    Celular/tablet (atalho na tela inicial) guardam a página antiga na memória. Aqui o sistema confere se há
    versão nova: ao abrir, recarrega sozinho; ao voltar para o app, recarrega se estiver na folha da semana
    sem nada em preenchimento; nos demais casos mostra o aviso "Atualizar". */
-const APP_VERSAO='202610271436';
+const APP_VERSAO='202610271449';
 let appVersaoNova=null;
 function atualizarAgora(){
   const base=location.href.split('#')[0].split('?')[0];
