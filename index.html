@@ -235,6 +235,10 @@
     .sem-tab-total{border:1px dashed var(--green);background:var(--bg-secondary);color:var(--text-primary);border-radius:var(--radius-md);padding:7px 14px;font-size:13px;font-weight:700;line-height:1.3;cursor:default;}
     .sem-tab-total small{display:block;font-size:10.5px;font-weight:400;color:var(--text-secondary);}
     .sem-tab-total b{color:var(--green);font-size:12px;}
+    .sem-export{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-2px 0 12px;}
+    .sem-export .btn-export{padding:6px 11px;font-size:12.5px;}
+    .sem-export-lbl{font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em;margin-right:2px;}
+    .sem-export-sep{width:1px;height:20px;background:var(--border-md);margin:0 8px;}
     .sem-sheet{background:var(--bg-primary);border:1px solid var(--border-md);border-radius:var(--radius-lg);overflow:hidden;}
     .sem-sheet-title{text-align:center;font-weight:700;font-size:15px;padding:11px 10px;border-bottom:1px solid var(--border-md);letter-spacing:.03em;text-transform:uppercase;}
     .sem-sheet-date{text-align:center;font-size:14px;padding:8px 10px;border-bottom:1px solid var(--border-md);color:var(--text-secondary);}
@@ -904,6 +908,18 @@
       <div id="sem-msg-err" class="msg msg-err"><i class="ti ti-alert-circle"></i> <span id="sem-msg-err-txt"></span></div>
 
       <div class="sem-tabs" id="sem-tabs"></div>
+
+      <div class="sem-export" id="sem-export">
+        <span class="sem-export-lbl">Folha do dia</span>
+        <button class="btn-export pdf" onclick="semExportar('dia','pdf')" title="Baixar a folha deste dia em PDF"><i class="ti ti-file-type-pdf"></i> PDF</button>
+        <button class="btn-export excel" onclick="semExportar('dia','xlsx')" title="Baixar a folha deste dia em Excel"><i class="ti ti-file-spreadsheet"></i> Excel</button>
+        <button class="btn-export" onclick="semImprimir(false)" title="Imprimir a folha deste dia, com o que já foi lançado"><i class="ti ti-printer"></i> Imprimir</button>
+        <button class="btn-export" onclick="semImprimir(true)" title="Imprimir a folha em branco, com os pontos do dia, para preencher à mão"><i class="ti ti-file-text"></i> Folha em branco</button>
+        <span class="sem-export-sep"></span>
+        <span class="sem-export-lbl">Semana inteira</span>
+        <button class="btn-export pdf" onclick="semExportar('semana','pdf')" title="Baixar a semana em PDF (resumo + uma página por dia)"><i class="ti ti-file-type-pdf"></i> PDF</button>
+        <button class="btn-export excel" onclick="semExportar('semana','xlsx')" title="Baixar a semana em Excel (resumo + uma aba por dia)"><i class="ti ti-file-spreadsheet"></i> Excel</button>
+      </div>
 
       <div class="sem-sheet" id="sem-sheet">
         <div class="sem-sheet-title" id="sem-sheet-title"></div>
@@ -2984,11 +3000,212 @@ async function limparLinhaSemana(i){
   }catch(e){semMsg('err','Erro ao excluir: '+((e&&e.message)||e));}
 }
 
+/* ── EXPORTAR / IMPRIMIR A FOLHA (formato da folha de papel) ── */
+// dados de um dia da semana (0 = segunda ... 5 = sábado): todos os pontos da lista do dia, com o que foi lançado
+function semDadosDia(dIdx){
+  const d=diasDaSemana()[dIdx],iso=isoLocal(d);
+  const regs=allSemana.filter(p=>p.data===iso);
+  const linhas=[];
+  listaPdvs(dIdx).forEach(pdv=>{
+    const k=pdv.toLowerCase(),principal=semEhPrincipal(pdv);
+    const recs=regs.filter(p=>(p.pdv||'').trim().toLowerCase()===k);
+    if(recs.length)recs.forEach(rec=>linhas.push({pdv,principal,rec}));else linhas.push({pdv,principal,rec:null});
+  });
+  // pedidos de pontos que não estão na lista do dia (pontos avulsos) entram no fim, para nada ficar de fora do arquivo
+  const naLista=new Set(listaPdvs(dIdx).map(n=>n.toLowerCase()));
+  regs.filter(p=>!naLista.has((p.pdv||'').trim().toLowerCase())).forEach(rec=>{const pdv=(rec.pdv||'').trim();linhas.push({pdv,principal:semEhPrincipal(pdv),rec});});
+  const lanc=linhas.filter(l=>l.rec);
+  const principaisDoDia=new Set(linhas.filter(l=>l.principal).map(l=>l.pdv.toLowerCase()));
+  const totais={
+    pedidos:lanc.length,
+    itens:lanc.reduce((s,l)=>s+(l.rec.qtd||0),0),
+    pontos:new Set(lanc.map(l=>l.pdv.toLowerCase())).size,
+    totalPontos:new Set(linhas.map(l=>l.pdv.toLowerCase())).size,
+    pendentes:lanc.filter(l=>semFaltantes(l.rec).length>0).length,
+    principais:principaisDoDia.size,
+    principaisLancados:new Set(lanc.filter(l=>l.principal).map(l=>l.pdv.toLowerCase())).size
+  };
+  return{dIdx,d,iso,titulo:'Lista de pedidos diário - '+DIAS_LONGO[dIdx],linhas,totais};
+}
+function semStatus(l){
+  if(!l.rec)return 'Não lançado';
+  const f=semFaltantes(l.rec);
+  return f.length?'Aguardando '+f.join(' e '):'Concluído';
+}
+function semHoraTxt(rec){return rec&&rec.hora_inicial?String(rec.hora_inicial).slice(0,5):'';}
+function semNomeArquivo(escopo,ext){
+  const dias=diasDaSemana();
+  const dd=d=>fmtDiaMes(d).replace('/','-');
+  if(escopo==='dia')return `Pedidos_${DIAS_LONGO[semDia]}_${dd(dias[semDia])}-${dias[semDia].getFullYear()}.${ext}`;
+  return `Pedidos_Semana_${dd(dias[0])}_a_${dd(dias[5])}-${dias[5].getFullYear()}.${ext}`;
+}
+function semNomeAba(dIdx){return `${DIAS_SEMANA[dIdx].slice(0,3)} ${fmtDiaMes(diasDaSemana()[dIdx]).replace('/','-')}`;}
+function semConfirmarExportar(){
+  return semDirty.size===0||confirm('Há linhas preenchidas e ainda não salvas; elas não entram no arquivo. Continuar mesmo assim?');
+}
+
+// ── PDF ──
+function semDesenharDiaPDF(pdf,dados){
+  const W=pdf.internal.pageSize.getWidth(),mx=14;
+  pdf.setDrawColor(0);pdf.setLineWidth(.3);pdf.setTextColor(0);
+  pdf.rect(mx,12,W-2*mx,9);
+  pdf.setFont('helvetica','bold');pdf.setFontSize(12);
+  pdf.text(dados.titulo.toUpperCase(),W/2,18,{align:'center'});
+  pdf.rect(mx,21,W-2*mx,8);
+  pdf.setFont('helvetica','normal');pdf.setFontSize(11);
+  pdf.text('DATA: '+fmtDataCurta(dados.d),W/2,26.5,{align:'center'});
+  pdf.autoTable({
+    startY:29,margin:{left:mx,right:mx},theme:'grid',
+    head:[['PONTO DE VENDA','QUANTIDADE','HORÁRIO INICIAL','FUNCIONÁRIO']],
+    body:dados.linhas.map(l=>[(l.principal?'• ':'')+l.pdv,l.rec?String(l.rec.qtd):'',semHoraTxt(l.rec),l.rec?(l.rec.colab||''):'']),
+    styles:{font:'helvetica',fontSize:9,cellPadding:2,textColor:0,lineColor:0,lineWidth:.2,minCellHeight:7,valign:'middle'},
+    headStyles:{fillColor:[255,255,255],textColor:0,fontStyle:'bold',halign:'center'},
+    columnStyles:{0:{cellWidth:72,fontStyle:'bold'},1:{cellWidth:26,halign:'center'},2:{cellWidth:32,halign:'center'}},
+    didParseCell:function(h){
+      if(h.section!=='body')return;
+      const l=dados.linhas[h.row.index];if(!l)return;
+      if(l.principal&&h.column.index===0)h.cell.styles.fillColor=[218,243,232];
+      if(l.rec&&semFaltantes(l.rec).length>0&&h.column.index>0)h.cell.styles.fillColor=[253,236,200];
+    }
+  });
+  const t=dados.totais;
+  let y=pdf.lastAutoTable.finalY+7;
+  pdf.setFont('helvetica','bold');pdf.setFontSize(9.5);
+  pdf.text(`Pontos lançados: ${t.pontos} de ${t.totalPontos}   |   Pedidos: ${t.pedidos}   |   Itens: ${t.itens.toLocaleString('pt-BR')}   |   Aguardando funcionário/horário: ${t.pendentes}`,mx,y);
+  y+=5;
+  pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(90);
+  pdf.text(`• ponto principal (${t.principaisLancados} de ${t.principais} lançados)   |   células em amarelo: aguardando funcionário e/ou horário   |   gerado em ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`,mx,y);
+  pdf.setTextColor(0);
+}
+function semDesenharResumoPDF(pdf,todos){
+  const W=pdf.internal.pageSize.getWidth(),mx=14,dias=diasDaSemana();
+  pdf.setDrawColor(0);pdf.setLineWidth(.3);pdf.setTextColor(0);
+  pdf.rect(mx,12,W-2*mx,9);
+  pdf.setFont('helvetica','bold');pdf.setFontSize(12);
+  pdf.text('RELATÓRIO SEMANAL - PEDIDOS DA SEMANA',W/2,18,{align:'center'});
+  pdf.rect(mx,21,W-2*mx,8);
+  pdf.setFont('helvetica','normal');pdf.setFontSize(11);
+  pdf.text(`SEMANA: ${fmtDiaMes(dias[0])} A ${fmtDiaMes(dias[5])}/${dias[5].getFullYear()}`,W/2,26.5,{align:'center'});
+  const soma=k=>todos.reduce((s,d)=>s+d.totais[k],0);
+  pdf.autoTable({
+    startY:29,margin:{left:mx,right:mx},theme:'grid',
+    head:[['DIA','DATA','PEDIDOS','ITENS','PONTOS LANÇADOS','PRINCIPAIS LANÇADOS','AGUARDANDO']],
+    body:todos.map(d=>[DIAS_LONGO[d.dIdx],fmtDiaMes(d.d),String(d.totais.pedidos),d.totais.itens.toLocaleString('pt-BR'),`${d.totais.pontos} de ${d.totais.totalPontos}`,`${d.totais.principaisLancados} de ${d.totais.principais}`,String(d.totais.pendentes)]),
+    foot:[['TOTAL DA SEMANA','',String(soma('pedidos')),soma('itens').toLocaleString('pt-BR'),`${soma('pontos')} de ${soma('totalPontos')}`,`${soma('principaisLancados')} de ${soma('principais')}`,String(soma('pendentes'))]],
+    styles:{font:'helvetica',fontSize:9,cellPadding:2.2,textColor:0,lineColor:0,lineWidth:.2,valign:'middle',halign:'center'},
+    headStyles:{fillColor:[255,255,255],textColor:0,fontStyle:'bold',halign:'center',fontSize:8},
+    footStyles:{fillColor:[240,240,240],textColor:0,fontStyle:'bold',halign:'center'},
+    columnStyles:{0:{halign:'left',fontStyle:'bold'}}
+  });
+  pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(90);
+  pdf.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}. As páginas seguintes trazem a folha de cada dia.`,mx,pdf.lastAutoTable.finalY+7);
+  pdf.setTextColor(0);
+}
+function semPdfDia(){
+  const{jsPDF}=window.jspdf;const pdf=new jsPDF({unit:'mm',format:'a4'});
+  semDesenharDiaPDF(pdf,semDadosDia(semDia));
+  pdf.save(semNomeArquivo('dia','pdf'));
+}
+function semPdfSemana(){
+  const{jsPDF}=window.jspdf;const pdf=new jsPDF({unit:'mm',format:'a4'});
+  const todos=DIAS_SEMANA.map((_,i)=>semDadosDia(i));
+  semDesenharResumoPDF(pdf,todos);
+  todos.forEach(d=>{pdf.addPage();semDesenharDiaPDF(pdf,d);});
+  pdf.save(semNomeArquivo('semana','pdf'));
+}
+
+// ── EXCEL ──
+function semAbaDia(dados){
+  const t=dados.totais;
+  const aoa=[[dados.titulo.toUpperCase()],['DATA: '+fmtDataCurta(dados.d)],[],
+    ['PONTO DE VENDA','QUANTIDADE','HORÁRIO INICIAL','FUNCIONÁRIO','SITUAÇÃO','PRINCIPAL','REGISTRADO POR']];
+  dados.linhas.forEach(l=>aoa.push([l.pdv,l.rec?l.rec.qtd:'',semHoraTxt(l.rec),l.rec?(l.rec.colab||''):'',semStatus(l),l.principal?'Sim':'Não',l.rec?(l.rec.criado_por||''):'']));
+  aoa.push([]);
+  aoa.push(['TOTAIS',t.itens,'','','Pedidos: '+t.pedidos+' | Pontos: '+t.pontos+' de '+t.totalPontos+' | Aguardando: '+t.pendentes]);
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:34},{wch:12},{wch:16},{wch:28},{wch:26},{wch:11},{wch:30}];
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:6}},{s:{r:1,c:0},e:{r:1,c:6}}];
+  return ws;
+}
+function semAbaResumo(todos){
+  const dias=diasDaSemana();
+  const aoa=[['RELATÓRIO SEMANAL - PEDIDOS DA SEMANA'],[`SEMANA: ${fmtDiaMes(dias[0])} A ${fmtDiaMes(dias[5])}/${dias[5].getFullYear()}`],[],
+    ['DIA','DATA','PEDIDOS','ITENS','PONTOS LANÇADOS','PONTOS DA LISTA','PRINCIPAIS LANÇADOS','PRINCIPAIS','AGUARDANDO FUNCIONÁRIO/HORÁRIO']];
+  todos.forEach(d=>aoa.push([DIAS_LONGO[d.dIdx],fmtDiaMes(d.d),d.totais.pedidos,d.totais.itens,d.totais.pontos,d.totais.totalPontos,d.totais.principaisLancados,d.totais.principais,d.totais.pendentes]));
+  const soma=k=>todos.reduce((s,d)=>s+d.totais[k],0);
+  aoa.push(['TOTAL DA SEMANA','',soma('pedidos'),soma('itens'),soma('pontos'),soma('totalPontos'),soma('principaisLancados'),soma('principais'),soma('pendentes')]);
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:18},{wch:9},{wch:10},{wch:10},{wch:17},{wch:16},{wch:20},{wch:12},{wch:34}];
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:8}},{s:{r:1,c:0},e:{r:1,c:8}}];
+  return ws;
+}
+function semExcelDia(){
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,semAbaDia(semDadosDia(semDia)),semNomeAba(semDia));
+  XLSX.writeFile(wb,semNomeArquivo('dia','xlsx'));
+}
+function semExcelSemana(){
+  const wb=XLSX.utils.book_new();
+  const todos=DIAS_SEMANA.map((_,i)=>semDadosDia(i));
+  XLSX.utils.book_append_sheet(wb,semAbaResumo(todos),'Resumo');
+  todos.forEach(d=>XLSX.utils.book_append_sheet(wb,semAbaDia(d),semNomeAba(d.dIdx)));
+  XLSX.writeFile(wb,semNomeArquivo('semana','xlsx'));
+}
+
+// ── IMPRESSÃO (folha com o lançado ou em branco para preencher à mão) ──
+function semHTMLFolha(dados,emBranco){
+  const t=dados.totais;
+  const linhas=dados.linhas.map(l=>{
+    const r=emBranco?null:l.rec;
+    const pend=!!r&&semFaltantes(r).length>0;
+    const pr=!emBranco&&l.principal;
+    return `<tr${pend?' class="pend"':''}><td class="n${pr?' pr':''}">${pr?'&#9679; ':''}${escSem(l.pdv)}</td><td class="c">${r?escSem(r.qtd):''}</td><td class="c">${r?escSem(semHoraTxt(r)):''}</td><td>${r?escSem(r.colab||''):''}</td></tr>`;
+  }).join('');
+  const rodape=emBranco?'':`<div class="rod"><b>Pontos lançados: ${t.pontos} de ${t.totalPontos} &nbsp;|&nbsp; Pedidos: ${t.pedidos} &nbsp;|&nbsp; Itens: ${t.itens.toLocaleString('pt-BR')} &nbsp;|&nbsp; Aguardando funcionário/horário: ${t.pendentes}</b><br>&#9679; ponto principal (${t.principaisLancados} de ${t.principais} lançados) &nbsp;|&nbsp; linhas em amarelo: aguardando funcionário e/ou horário</div>`;
+  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${escSem(dados.titulo)} - ${fmtDataCurta(dados.d)}</title>
+<style>@page{size:A4;margin:12mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#000;margin:0}
+.t{border:1px solid #000;text-align:center;font-weight:700;padding:7px;font-size:15px;text-transform:uppercase}
+.d{border:1px solid #000;border-top:0;text-align:center;padding:6px;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #000;padding:5px 8px;height:${emBranco?'26px':'22px'}}
+th{text-transform:uppercase;font-size:11.5px;text-align:center}td.n{font-weight:700;text-transform:uppercase}td.pr{background:#dff3ea}td.c{text-align:center}
+tr.pend td{background:#fdecc8}tr.pend td.n.pr{background:#dff3ea}.rod{margin-top:10px;font-size:10.5px;line-height:1.6}
+tr{page-break-inside:avoid}</style></head><body>
+<div class="t">${escSem(dados.titulo)}</div><div class="d">DATA: ${fmtDataCurta(dados.d)}</div>
+<table><thead><tr><th style="width:36%">Ponto de venda</th><th style="width:14%">Quantidade</th><th style="width:16%">Horário inicial</th><th>Funcionário</th></tr></thead><tbody>${linhas}</tbody></table>${rodape}</body></html>`;
+}
+function semImprimirHTML(html){
+  const f=document.createElement('iframe');
+  f.setAttribute('aria-hidden','true');
+  f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+  document.body.appendChild(f);
+  const w=f.contentWindow,doc=w.document;
+  doc.open();doc.write(html);doc.close();
+  const limpar=()=>setTimeout(()=>{if(f.parentNode)f.parentNode.removeChild(f);},1000);
+  w.onafterprint=limpar;
+  setTimeout(()=>{try{w.focus();w.print();}catch(e){console.error(e);semMsg('err','Não foi possível abrir a impressão neste aparelho. Use o botão PDF e imprima o arquivo.');limpar();}},300);
+  setTimeout(limpar,180000);
+}
+function semImprimir(emBranco){
+  if(!emBranco&&!semConfirmarExportar())return;
+  semImprimirHTML(semHTMLFolha(semDadosDia(semDia),!!emBranco));
+}
+
+function semExportar(escopo,tipo){
+  if(tipo==='pdf'&&!(window.jspdf&&window.jspdf.jsPDF)){semMsg('err','O gerador de PDF não carregou (sem internet?). Atualize a página e tente de novo.');return;}
+  if(tipo==='xlsx'&&typeof XLSX==='undefined'){semMsg('err','O gerador de Excel não carregou (sem internet?). Atualize a página e tente de novo.');return;}
+  if(!semConfirmarExportar())return;
+  try{
+    if(tipo==='pdf'){if(escopo==='dia')semPdfDia();else semPdfSemana();}
+    else{if(escopo==='dia')semExcelDia();else semExcelSemana();}
+    semMsg('ok','Arquivo gerado.');
+  }catch(e){console.error(e);semMsg('err','Não foi possível gerar o arquivo: '+((e&&e.message)||e));}
+}
+
 /* ── ATUALIZAÇÃO AUTOMÁTICA DA VERSÃO ──
    Celular/tablet (atalho na tela inicial) guardam a página antiga na memória. Aqui o sistema confere se há
    versão nova: ao abrir, recarrega sozinho; ao voltar para o app, recarrega se estiver na folha da semana
    sem nada em preenchimento; nos demais casos mostra o aviso "Atualizar". */
-const APP_VERSAO='202610261615';
+const APP_VERSAO='202610271436';
 let appVersaoNova=null;
 function atualizarAgora(){
   const base=location.href.split('#')[0].split('?')[0];
