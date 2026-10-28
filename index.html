@@ -269,8 +269,8 @@
     .sem-table tr.sem-pend td{background:rgba(239,159,39,.12);}
     /* ponto ainda sem nenhum pedido lançado (e que não é principal): pisca em amarelo, no mesmo ritmo do verde */
     .sem-table tr.sem-vazio td{-webkit-animation:semPiscaVazio 1.2s ease-in-out infinite;animation:semPiscaVazio 1.2s ease-in-out infinite;}
-    @-webkit-keyframes semPiscaVazio{0%,100%{background-color:rgba(239,159,39,0);}50%{background-color:rgba(239,159,39,.45);}}
-    @keyframes semPiscaVazio{0%,100%{background-color:rgba(239,159,39,0);}50%{background-color:rgba(239,159,39,.45);}}
+    @-webkit-keyframes semPiscaVazio{0%,100%{background-color:rgba(239,159,39,0);}50%{background-color:rgba(239,159,39,.18);}}
+    @keyframes semPiscaVazio{0%,100%{background-color:rgba(239,159,39,0);}50%{background-color:rgba(239,159,39,.18);}}
     .sem-pend-txt{font-size:11px;font-weight:600;color:#854F0B;margin-top:3px;} body.dark .sem-pend-txt{color:#EF9F27;}
     .sem-ok.seg{background:#D98A0B;} .sem-ok.seg:hover{background:#B87208;}
     .sem-ponto-in{display:flex;align-items:center;}
@@ -3248,7 +3248,7 @@ function semExportar(escopo,tipo){
    Celular/tablet (atalho na tela inicial) guardam a página antiga na memória. Aqui o sistema confere se há
    versão nova: ao abrir, recarrega sozinho; ao voltar para o app, recarrega se estiver na folha da semana
    sem nada em preenchimento; nos demais casos mostra o aviso "Atualizar". */
-const APP_VERSAO='202610281627';
+const APP_VERSAO='202610281631';
 let appVersaoNova=null;
 function atualizarAgora(){
   const base=location.href.split('#')[0].split('?')[0];
