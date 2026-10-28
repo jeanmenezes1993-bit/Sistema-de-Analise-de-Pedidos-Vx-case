@@ -275,6 +275,8 @@
     .sem-ok:hover{background:var(--green-dark);} .sem-ok:disabled{background:#9FE1CB;cursor:not-allowed;}
     .sem-rodape{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 12px;}
     .sem-rodape button{font-size:13px;padding:6px 12px;border-radius:var(--radius-md);border:1px dashed var(--border-md);background:none;color:var(--green-text);cursor:pointer;}
+    .sem-rodape-acoes{display:flex;gap:6px;flex-wrap:wrap;}
+    .sem-rodape .sem-rodape-acoes .btn-export{padding:6px 11px;font-size:12.5px;border:1px solid var(--border-md);background:var(--bg-primary);color:var(--text-secondary);}
     .sem-dica{font-size:11.5px;color:var(--text-secondary);}
     select,input{cursor:pointer;}
   </style>
@@ -930,6 +932,10 @@
         </div>
         <div class="sem-rodape">
           <button onclick="adicionarPontoSemana()"><i class="ti ti-plus"></i> Adicionar outro ponto</button>
+          <div class="sem-rodape-acoes">
+            <button class="btn-export" onclick="semImprimir(false)" title="Imprimir a folha deste dia, com o que já foi lançado"><i class="ti ti-printer"></i> Imprimir</button>
+            <button class="btn-export" onclick="semImprimir(true)" title="Imprimir a folha em branco, com os pontos do dia, para preencher à mão"><i class="ti ti-file-text"></i> Folha em branco</button>
+          </div>
           <span class="sem-dica">Cadastre só com a quantidade no <b>✓</b> (ou tecle Enter). Depois informe o funcionário e o horário e valide no botão laranja.</span>
         </div>
       </div>
@@ -3203,7 +3209,7 @@ function semExportar(escopo,tipo){
    Celular/tablet (atalho na tela inicial) guardam a página antiga na memória. Aqui o sistema confere se há
    versão nova: ao abrir, recarrega sozinho; ao voltar para o app, recarrega se estiver na folha da semana
    sem nada em preenchimento; nos demais casos mostra o aviso "Atualizar". */
-const APP_VERSAO='202610271449';
+const APP_VERSAO='202610280917';
 let appVersaoNova=null;
 function atualizarAgora(){
   const base=location.href.split('#')[0].split('?')[0];
