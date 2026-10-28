@@ -267,6 +267,10 @@
     @keyframes semPiscaDot{0%,100%{transform:scale(1);opacity:.55;}50%{transform:scale(1.6);opacity:1;}}
     /* linha cadastrada (quantidade + funcionário) que ainda aguarda o horário: segunda validação */
     .sem-table tr.sem-pend td{background:rgba(239,159,39,.12);}
+    /* ponto ainda sem nenhum pedido lançado (e que não é principal): pisca em amarelo, no mesmo ritmo do verde */
+    .sem-table tr.sem-vazio td{-webkit-animation:semPiscaVazio 1.2s ease-in-out infinite;animation:semPiscaVazio 1.2s ease-in-out infinite;}
+    @-webkit-keyframes semPiscaVazio{0%,100%{background-color:rgba(239,159,39,0);}50%{background-color:rgba(239,159,39,.45);}}
+    @keyframes semPiscaVazio{0%,100%{background-color:rgba(239,159,39,0);}50%{background-color:rgba(239,159,39,.45);}}
     .sem-pend-txt{font-size:11px;font-weight:600;color:#854F0B;margin-top:3px;} body.dark .sem-pend-txt{color:#EF9F27;}
     .sem-ok.seg{background:#D98A0B;} .sem-ok.seg:hover{background:#B87208;}
     .sem-ponto-in{display:flex;align-items:center;}
@@ -2860,11 +2864,11 @@ function renderSemana(){
       ?`<td><input class="sem-in" id="sem-n-${i}" type="text" list="sem-pdv-list" placeholder="Nome do ponto" autocomplete="off" style="text-align:left;" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"></td>`
       :`<td class="sem-ponto${semEhPrincipal(l.pdv)?' sem-principal':''}" id="sem-pt-${i}">${semPontoHTML(l.pdv)}</td>`;
     const por=r&&r.criado_por?` title="Registrado por ${escSem(r.criado_por)}"`:'';
-    return`<tr id="sem-tr-${i}" class="${[r&&!pend?'sem-row-ok':'',pend?'sem-pend':'',semEhPrincipal(l.pdv)?'sem-pisca':''].filter(Boolean).join(' ')}"${por}>
+    return`<tr id="sem-tr-${i}" class="${[r&&!pend?'sem-row-ok':'',pend?'sem-pend':'',semEhPrincipal(l.pdv)?'sem-pisca':'',!r&&!l.novo&&!semEhPrincipal(l.pdv)?'sem-vazio':''].filter(Boolean).join(' ')}"${por}>
       ${ponto}
       <td><input class="sem-in" id="sem-q-${i}" type="number" min="1" value="${r?escSem(r.qtd):''}" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"${bloq}></td>
       <td><input class="sem-in" id="sem-h-${i}" type="time" value="${r?escSem((r.hora_inicial||'').slice(0,5)):''}" oninput="semSujo(${i},true)" onkeydown="semTecla(event,${i})"${bloqH}></td>
-      <td><select class="sem-in" id="sem-f1-${i}" style="text-align:left;" onchange="semSujo(${i},true)"${bloqF}>${semOpcoesColab(ativos,f1)}</select>${pend?'<div class="sem-pend-txt">Aguardando '+falt.join(' e ')+'</div>':''}</td>
+      <td><select class="sem-in" id="sem-f1-${i}" style="text-align:left;" onchange="semFuncionarioMudou(${i})"${bloqF}>${semOpcoesColab(ativos,f1)}</select>${pend?'<div class="sem-pend-txt">Aguardando '+falt.join(' e ')+'</div>':''}</td>
       <td class="sem-acoes"><div class="sem-btns"><button class="sem-ok${pend?' seg':''}" id="sem-b-${i}" onclick="salvarLinhaSemana(${i})" title="${pend?'Validar '+falt.join(' e '):'Salvar linha'}"${bloqOk}><i class="ti ${pend?'ti-clock-check':'ti-check'}"></i></button><button class="btn-edit" id="sem-e-${i}" onclick="editarLinhaSemana(${i})" title="${l.novo?'':(r?'Editar linha':'Editar o nome do ponto')}"${l.novo?' style="visibility:hidden;"':''}><i class="ti ti-pencil"></i></button><button class="btn-del" onclick="limparLinhaSemana(${i})" title="${r?'Limpar linha (exclui o registro)':'Limpar campos'}"><i class="ti ti-trash"></i></button></div></td>
     </tr>`;
   }).join('');
@@ -2994,6 +2998,29 @@ async function salvarLinhaSemana(i){
       ?`O banco ainda exige ${col==='colab'?'o funcionário':'o horário'}. Rode no Supabase: alter table public.pedidos_semana alter column ${col} drop not null;`
       :(/pedidos_semana|PGRST205|42P01/i.test(msg)?'A tabela pedidos_semana ainda não existe no Supabase.':msg));
     if(btn)btn.disabled=false;
+  }
+}
+
+// funcionário escolhido numa linha já cadastrada que o aguardava: grava na hora, sem prazo para informar o horário
+// (antes ele só ficava na tela até o horário ser validado e sumia se a página fosse recarregada)
+function semFuncionarioMudou(i){
+  const l=semLinhas[i],q=document.getElementById('sem-q-'+i);
+  if(l&&l.rec&&!l.rec.colab&&q&&q.disabled&&semVal('sem-f1-'+i)){salvarFuncionarioSemana(i);return;}
+  semSujo(i,true);
+}
+async function salvarFuncionarioSemana(i){
+  const l=semLinhas[i];if(!l||!l.rec)return;
+  const colab=semVal('sem-f1-'+i);if(!colab)return;
+  const sel=document.getElementById('sem-f1-'+i);if(sel)sel.disabled=true;
+  try{
+    const{error}=await sb.from('pedidos_semana').update({colab}).eq('id',l.rec.id);
+    if(error)throw error;
+    await registrarLog('definiu funcionário do pedido da semana',`${l.pdv} — ${colab} — ${l.rec.qtd||0} itens — ${fmtDiaMes(diasDaSemana()[semDia])}`,USUARIO_EMAIL);
+    semMsg('ok',l.rec.hora_inicial?`${l.pdv}: funcionário salvo.`:`${l.pdv}: funcionário salvo. Falta informar o horário.`);
+    await carregarSemana(true);
+  }catch(e){
+    if(sel)sel.disabled=false;
+    semMsg('err','Erro ao salvar o funcionário: '+((e&&(e.message||e.details))||e));
   }
 }
 
@@ -3221,7 +3248,7 @@ function semExportar(escopo,tipo){
    Celular/tablet (atalho na tela inicial) guardam a página antiga na memória. Aqui o sistema confere se há
    versão nova: ao abrir, recarrega sozinho; ao voltar para o app, recarrega se estiver na folha da semana
    sem nada em preenchimento; nos demais casos mostra o aviso "Atualizar". */
-const APP_VERSAO='202610280934';
+const APP_VERSAO='202610281627';
 let appVersaoNova=null;
 function atualizarAgora(){
   const base=location.href.split('#')[0].split('?')[0];
