@@ -235,6 +235,12 @@
     .sem-tab-total{border:1px dashed var(--green);background:var(--bg-secondary);color:var(--text-primary);border-radius:var(--radius-md);padding:7px 14px;font-size:13px;font-weight:700;line-height:1.3;cursor:default;}
     .sem-tab-total small{display:block;font-size:10.5px;font-weight:400;color:var(--text-secondary);}
     .sem-tab-total b{color:var(--green);font-size:12px;}
+    .sem-colabs{display:flex;gap:6px;flex-wrap:wrap;align-items:stretch;margin:-4px 0 12px;}
+    .sem-colabs:empty{display:none;}
+    .sem-colabs-lbl{align-self:center;font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em;margin-right:2px;}
+    .sem-colab-card{border:1px solid var(--border-md);background:var(--bg-primary);color:var(--text-primary);border-radius:var(--radius-md);padding:6px 12px;font-size:13px;font-weight:600;line-height:1.3;cursor:default;}
+    .sem-colab-card small{display:block;font-size:10.5px;font-weight:400;color:var(--text-secondary);}
+    .sem-colab-card b{color:var(--green);font-size:12px;}
     .sem-export{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 12px;border-top:1px solid var(--border);}
     .sem-export .btn-export{padding:6px 11px;font-size:12.5px;}
     .sem-export-lbl{font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em;margin-right:2px;}
@@ -907,6 +913,7 @@
       <div id="sem-msg-err" class="msg msg-err"><i class="ti ti-alert-circle"></i> <span id="sem-msg-err-txt"></span></div>
 
       <div class="sem-tabs" id="sem-tabs"></div>
+      <div class="sem-colabs" id="sem-colabs"></div>
 
       <div class="sem-sheet" id="sem-sheet">
         <div class="sem-sheet-title" id="sem-sheet-title"></div>
@@ -2820,6 +2827,17 @@ function renderSemana(){
   semSetVal('sem-data-input',fmtDataBR(d));
 
   const doDia=allSemana.filter(p=>p.data===iso);
+  // um cartão por funcionário já informado na folha do dia: quantos pedidos (e itens) ele coleta
+  const porColab=new Map();
+  doDia.forEach(p=>{
+    const nome=String(p.colab||'').trim();if(!nome)return;
+    const k=nome.toLowerCase(),c=porColab.get(k)||{nome,pedidos:0,itens:0};
+    c.pedidos++;c.itens+=p.qtd||0;porColab.set(k,c);
+  });
+  const cartoes=[...porColab.values()].sort((a,b)=>b.pedidos-a.pedidos||a.nome.localeCompare(b.nome,'pt-BR'));
+  document.getElementById('sem-colabs').innerHTML=cartoes.length
+    ?`<span class="sem-colabs-lbl">${DIAS_LONGO[semDia]}</span>`+cartoes.map(c=>`<div class="sem-colab-card" title="${escSem(c.nome)} — pedidos cadastrados em ${DIAS_LONGO[semDia]}">${escSem(c.nome)}<small><b>${c.pedidos}</b> pedido(s) · ${c.itens.toLocaleString('pt-BR')} iten(s)</small></div>`).join('')
+    :'';
   const preench=new Set(doDia.map(p=>(p.pdv||'').trim().toLowerCase())).size;
   document.getElementById('sem-kpi-pontos').textContent=`${preench} / ${listaPdvs().length}`;
   document.getElementById('sem-kpi-itens').textContent=doDia.reduce((s,p)=>s+(p.qtd||0),0).toLocaleString('pt-BR');
@@ -3203,7 +3221,7 @@ function semExportar(escopo,tipo){
    Celular/tablet (atalho na tela inicial) guardam a página antiga na memória. Aqui o sistema confere se há
    versão nova: ao abrir, recarrega sozinho; ao voltar para o app, recarrega se estiver na folha da semana
    sem nada em preenchimento; nos demais casos mostra o aviso "Atualizar". */
-const APP_VERSAO='202610280922';
+const APP_VERSAO='202610280934';
 let appVersaoNova=null;
 function atualizarAgora(){
   const base=location.href.split('#')[0].split('?')[0];
