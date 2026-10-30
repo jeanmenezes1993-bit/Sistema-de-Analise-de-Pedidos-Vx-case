@@ -82,6 +82,9 @@
     .msg{border-radius:var(--radius-md);padding:10px 14px;font-size:13px;margin-bottom:13px;display:none;align-items:center;gap:8px;}
     .msg-ok{background:var(--green-light);color:var(--green-text);border:1px solid #9FE1CB;}
     .msg-err{background:var(--red-light);color:var(--red-text);border:1px solid #F09595;}
+    .erros-alerta{background:var(--red-light);color:var(--red-text);border:1px solid #F09595;border-left:4px solid #E24B4A;border-radius:var(--radius-md);padding:12px 16px;margin-bottom:18px;font-size:13px;line-height:1.5;}
+    .erros-alerta-tit{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;margin-bottom:4px;}
+    .erros-alerta ul{margin:6px 0 0 22px;padding:0;}
     .form-error{color:var(--red-text);font-size:12px;margin-top:7px;display:none;}
     .hist-filters{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
     .hist-filters select,.hist-filters input{font-size:13px;padding:6px 10px;border-radius:var(--radius-md);border:1px solid var(--border-md);background:var(--bg-primary);color:var(--text-primary);}
@@ -665,6 +668,9 @@
         <div><div class="page-title">Erros Operacionais</div><div class="page-sub">Registro e controle de divergências Estoque Geral Vx case</div></div>
         <div class="rt-indicator"><div class="rt-dot"></div> ONLINE</div>
       </div>
+
+      <!-- AVISO DE ADVERTÊNCIA: mais de 5 erros de um colaborador no mês vigente -->
+      <div class="erros-alerta" id="erros-alerta" style="display:none;"></div>
 
       <!-- KPIs -->
       <div class="kpi-grid" id="erros-kpis" style="margin-bottom:18px;">
@@ -1999,7 +2005,29 @@ function aplicarFiltroErros(){
   renderErrosLinha();
 }
 
+// colaborador com mais de 5 erros no mês vigente: avisa que é preciso aplicar advertência por erro operacional
+const ERROS_LIMITE_ADVERTENCIA=5;
+function renderErrosAlerta(){
+  const el=document.getElementById('erros-alerta');if(!el)return;
+  const mes=isoLocal(new Date()).substring(0,7);
+  const porColab=new Map();
+  allErros.forEach(e=>{
+    if(!(e.data||'').startsWith(mes))return;
+    const nome=String(e.colab||'').trim();if(!nome)return;
+    const k=nome.toLowerCase(),c=porColab.get(k)||{nome,n:0};
+    c.n++;porColab.set(k,c);
+  });
+  const acima=[...porColab.values()].filter(c=>c.n>ERROS_LIMITE_ADVERTENCIA).sort((a,b)=>b.n-a.n||a.nome.localeCompare(b.nome,'pt-BR'));
+  if(!acima.length){el.style.display='none';el.innerHTML='';return;}
+  const[ano,m]=mes.split('-');
+  el.innerHTML=`<div class="erros-alerta-tit"><i class="ti ti-alert-triangle"></i> É preciso aplicar advertência por erro operacional</div>`
+    +`Em ${MESES[parseInt(m)-1]} de ${ano}, ${acima.length>1?'os colaboradores abaixo passaram':'o colaborador abaixo passou'} de ${ERROS_LIMITE_ADVERTENCIA} erros operacionais:`
+    +`<ul>${acima.map(c=>`<li><b>${escSem(c.nome)}</b> — ${c.n} erros no mês</li>`).join('')}</ul>`;
+  el.style.display='block';
+}
+
 function renderErrosKpis(){
+  renderErrosAlerta();
   const filtroMes=document.getElementById('erros-filtro-mes')?.value||'all';
   const filtroMotivo=document.getElementById('erros-filtro-motivo')?.value||'all';
   const dados=errosFiltrados();
@@ -3248,7 +3276,7 @@ function semExportar(escopo,tipo){
    Celular/tablet (atalho na tela inicial) guardam a página antiga na memória. Aqui o sistema confere se há
    versão nova: ao abrir, recarrega sozinho; ao voltar para o app, recarrega se estiver na folha da semana
    sem nada em preenchimento; nos demais casos mostra o aviso "Atualizar". */
-const APP_VERSAO='202610281631';
+const APP_VERSAO='202610301229';
 let appVersaoNova=null;
 function atualizarAgora(){
   const base=location.href.split('#')[0].split('?')[0];
