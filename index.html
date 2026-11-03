@@ -281,6 +281,10 @@
     .sem-in{width:100%;font-size:13px;padding:5px 7px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--bg-primary);color:var(--text-primary);text-align:center;}
     .sem-in:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 2px rgba(29,158,117,.15);}
     .sem-acoes{width:118px;text-align:center;white-space:nowrap;}
+    .sem-fin{text-align:center;white-space:nowrap;}
+    .sem-fin-lbl{display:inline-flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;font-size:11px;color:var(--text-secondary);}
+    .sem-fin-lbl input{width:24px;height:24px;margin:0;cursor:pointer;accent-color:var(--green);}
+    .sem-table tr.sem-final .sem-fin-lbl{color:var(--green-text);font-weight:600;}
     .sem-btns{display:flex;gap:4px;justify-content:center;}
     .sem-btns .btn-edit,.sem-btns .btn-del{width:30px;height:28px;padding:0;margin:0;display:inline-flex;align-items:center;justify-content:center;font-size:14px;}
     .sem-in:disabled{background:transparent;color:var(--text-primary);opacity:1;cursor:default;border-color:transparent;-webkit-appearance:none;appearance:none;}
@@ -930,7 +934,7 @@
         <div class="sem-sheet-date">Data: <input type="text" class="sem-data-in" id="sem-data-input" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" title="Digite a data (dd/mm/aaaa) e tecle Enter" onfocus="this.select()" onchange="irParaDataSemana(this.value)" onkeydown="if(event.key==='Enter')this.blur()"></div>
         <div class="sem-wrap">
           <table class="sem-table">
-            <thead><tr><th style="width:34%;">Ponto de venda</th><th style="width:12%;">Quantidade</th><th style="width:14%;">Horário inicial</th><th>Funcionário</th><th style="width:118px;"></th></tr></thead>
+            <thead><tr><th style="width:34%;">Ponto de venda</th><th style="width:12%;">Quantidade</th><th style="width:14%;">Horário inicial</th><th>Funcionário</th><th style="width:84px;">Finalizado</th><th style="width:118px;"></th></tr></thead>
             <tbody id="sem-body"></tbody>
           </table>
         </div>
@@ -2892,16 +2896,17 @@ function renderSemana(){
       ?`<td><input class="sem-in" id="sem-n-${i}" type="text" list="sem-pdv-list" placeholder="Nome do ponto" autocomplete="off" style="text-align:left;" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"></td>`
       :`<td class="sem-ponto${semEhPrincipal(l.pdv)?' sem-principal':''}" id="sem-pt-${i}">${semPontoHTML(l.pdv)}</td>`;
     const por=r&&r.criado_por?` title="Registrado por ${escSem(r.criado_por)}"`:'';
-    return`<tr id="sem-tr-${i}" class="${[r&&!pend?'sem-row-ok':'',pend?'sem-pend':'',semEhPrincipal(l.pdv)?'sem-pisca':'',!r&&!l.novo&&!semEhPrincipal(l.pdv)?'sem-vazio':''].filter(Boolean).join(' ')}"${por}>
+    return`<tr id="sem-tr-${i}" class="${[r&&!pend?'sem-row-ok':'',pend?'sem-pend':'',semEhPrincipal(l.pdv)?'sem-pisca':'',r&&r.finalizado?'sem-final':'',!r&&!l.novo&&!semEhPrincipal(l.pdv)?'sem-vazio':''].filter(Boolean).join(' ')}"${por}>
       ${ponto}
       <td><input class="sem-in" id="sem-q-${i}" type="number" min="1" value="${r?escSem(r.qtd):''}" oninput="semSujo(${i})" onkeydown="semTecla(event,${i})"${bloq}></td>
       <td><input class="sem-in" id="sem-h-${i}" type="time" value="${r?escSem((r.hora_inicial||'').slice(0,5)):''}" oninput="semSujo(${i},true)" onkeydown="semTecla(event,${i})"${bloqH}></td>
       <td><select class="sem-in" id="sem-f1-${i}" style="text-align:left;" onchange="semFuncionarioMudou(${i})"${bloqF}>${semOpcoesColab(ativos,f1)}</select>${pend?'<div class="sem-pend-txt">Aguardando '+falt.join(' e ')+'</div>':''}</td>
+      <td class="sem-fin">${r?`<label class="sem-fin-lbl" title="${r.finalizado?'Pedido finalizado. Desmarque para reabrir':'Marque quando finalizar o pedido'}"><input type="checkbox" id="sem-fin-${i}"${r.finalizado?' checked':''} onchange="semFinalizar(${i})"><span>${r.finalizado?semHoraFinal(r):''}</span></label>`:''}</td>
       <td class="sem-acoes"><div class="sem-btns"><button class="sem-ok${pend?' seg':''}" id="sem-b-${i}" onclick="salvarLinhaSemana(${i})" title="${pend?'Validar '+falt.join(' e '):'Salvar linha'}"${bloqOk}><i class="ti ${pend?'ti-clock-check':'ti-check'}"></i></button><button class="btn-edit" id="sem-e-${i}" onclick="editarLinhaSemana(${i})" title="${l.novo?'':(r?'Editar linha':'Editar o nome do ponto')}"${l.novo?' style="visibility:hidden;"':''}><i class="ti ti-pencil"></i></button><button class="btn-del" onclick="limparLinhaSemana(${i})" title="${r?'Limpar linha (exclui o registro)':'Limpar campos'}"><i class="ti ti-trash"></i></button></div></td>
     </tr>`;
   }).join('');
 
-  if(!semLinhas.length)document.getElementById('sem-body').innerHTML='<tr><td colspan="5" class="empty-state">Nenhum ponto de venda cadastrado para '+DIAS_LONGO[semDia]+'. Use "Adicionar outro ponto" abaixo.</td></tr>';
+  if(!semLinhas.length)document.getElementById('sem-body').innerHTML='<tr><td colspan="6" class="empty-state">Nenhum ponto de venda cadastrado para '+DIAS_LONGO[semDia]+'. Use "Adicionar outro ponto" abaixo.</td></tr>';
 
   semLinhas.forEach((l,i)=>{
     const g=guardados[semChave(l)];if(!g)return;
@@ -3029,6 +3034,32 @@ async function salvarLinhaSemana(i){
   }
 }
 
+// o colaborador marca o pedido como finalizado (grava na hora, com o horário em que foi marcado)
+function semHoraFinal(rec){
+  const d=rec&&rec.finalizado_em?new Date(rec.finalizado_em):null;
+  return d&&!isNaN(d)?d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
+}
+async function semFinalizar(i){
+  const l=semLinhas[i],cb=document.getElementById('sem-fin-'+i);
+  if(!l||!l.rec||!cb)return;
+  const marcar=cb.checked;
+  if(!marcar&&!confirm(`Reabrir o pedido de ${l.pdv}? A finalização será desmarcada.`)){cb.checked=true;return;}
+  cb.disabled=true;
+  try{
+    const{error}=await sb.from('pedidos_semana').update({finalizado:marcar,finalizado_em:marcar?new Date().toISOString():null}).eq('id',l.rec.id);
+    if(error)throw error;
+    await registrarLog(marcar?'finalizou pedido da semana':'reabriu pedido da semana',`${l.pdv} — ${l.rec.colab||'sem funcionário'} — ${l.rec.qtd||0} itens — ${fmtDiaMes(diasDaSemana()[semDia])}`,USUARIO_EMAIL);
+    semMsg('ok',marcar?`${l.pdv}: pedido finalizado.`:`${l.pdv}: pedido reaberto.`);
+    await carregarSemana(true);
+  }catch(e){
+    cb.checked=!marcar;cb.disabled=false;
+    const msg=(e&&(e.message||e.details))||'Erro ao salvar';
+    semMsg('err',/finalizado|42703|PGRST204/i.test(msg+' '+((e&&e.code)||''))
+      ?'O banco ainda não tem os campos de finalização. Rode no Supabase: alter table public.pedidos_semana add column if not exists finalizado boolean not null default false, add column if not exists finalizado_em timestamptz;'
+      :'Erro ao finalizar: '+msg);
+  }
+}
+
 // funcionário escolhido numa linha já cadastrada que o aguardava: grava na hora, sem prazo para informar o horário
 // (antes ele só ficava na tela até o horário ser validado e sumia se a página fosse recarregada)
 function semFuncionarioMudou(i){
@@ -3100,6 +3131,7 @@ function semDadosDia(dIdx){
 }
 function semStatus(l){
   if(!l.rec)return 'Não lançado';
+  if(l.rec.finalizado)return 'Finalizado'+(semHoraFinal(l.rec)?' às '+semHoraFinal(l.rec):'');
   const f=semFaltantes(l.rec);
   return f.length?'Aguardando '+f.join(' e '):'Concluído';
 }
@@ -3276,7 +3308,7 @@ function semExportar(escopo,tipo){
    Celular/tablet (atalho na tela inicial) guardam a página antiga na memória. Aqui o sistema confere se há
    versão nova: ao abrir, recarrega sozinho; ao voltar para o app, recarrega se estiver na folha da semana
    sem nada em preenchimento; nos demais casos mostra o aviso "Atualizar". */
-const APP_VERSAO='202610301229';
+const APP_VERSAO='202611031016';
 let appVersaoNova=null;
 function atualizarAgora(){
   const base=location.href.split('#')[0].split('?')[0];
