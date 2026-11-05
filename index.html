@@ -2009,11 +2009,12 @@ function aplicarFiltroErros(){
   renderErrosLinha();
 }
 
-// colaborador com mais de 5 erros no mês vigente: avisa que é preciso aplicar advertência por erro operacional
+// colaborador com 5 ou mais erros no mês selecionado no filtro (ou no mês vigente se "todos"): avisa que é preciso aplicar advertência por erro operacional
 const ERROS_LIMITE_ADVERTENCIA=5;
 function renderErrosAlerta(){
   const el=document.getElementById('erros-alerta');if(!el)return;
-  const mes=isoLocal(new Date()).substring(0,7);
+  const fm=document.getElementById('erros-filtro-mes')?.value||'all';
+  const mes=fm!=='all'?fm:isoLocal(new Date()).substring(0,7);
   const porColab=new Map();
   allErros.forEach(e=>{
     if(!(e.data||'').startsWith(mes))return;
@@ -2021,11 +2022,11 @@ function renderErrosAlerta(){
     const k=nome.toLowerCase(),c=porColab.get(k)||{nome,n:0};
     c.n++;porColab.set(k,c);
   });
-  const acima=[...porColab.values()].filter(c=>c.n>ERROS_LIMITE_ADVERTENCIA).sort((a,b)=>b.n-a.n||a.nome.localeCompare(b.nome,'pt-BR'));
+  const acima=[...porColab.values()].filter(c=>c.n>=ERROS_LIMITE_ADVERTENCIA).sort((a,b)=>b.n-a.n||a.nome.localeCompare(b.nome,'pt-BR'));
   if(!acima.length){el.style.display='none';el.innerHTML='';return;}
   const[ano,m]=mes.split('-');
   el.innerHTML=`<div class="erros-alerta-tit"><i class="ti ti-alert-triangle"></i> É preciso aplicar advertência por erro operacional</div>`
-    +`Em ${MESES[parseInt(m)-1]} de ${ano}, ${acima.length>1?'os colaboradores abaixo passaram':'o colaborador abaixo passou'} de ${ERROS_LIMITE_ADVERTENCIA} erros operacionais:`
+    +`Em ${MESES[parseInt(m)-1]} de ${ano}, ${acima.length>1?'os colaboradores abaixo atingiram':'o colaborador abaixo atingiu'} ${ERROS_LIMITE_ADVERTENCIA} ou mais erros operacionais:`
     +`<ul>${acima.map(c=>`<li><b>${escSem(c.nome)}</b> — ${c.n} erros no mês</li>`).join('')}</ul>`;
   el.style.display='block';
 }
