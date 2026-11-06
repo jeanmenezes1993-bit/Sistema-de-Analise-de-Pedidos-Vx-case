@@ -2053,18 +2053,19 @@ function renderErrosKpis(){
   // Taxa de erros do mês x quantidade de produtos atendidos no mês
   const taxaEl=document.getElementById('erros-pizza-taxa');
   const taxaCard=document.getElementById('erros-taxa-mes'),taxaSub=document.getElementById('erros-taxa-mes-sub'),taxaLbl=document.getElementById('erros-taxa-mes-label');
-  // sem filtro de mês nesta tela, usa o mês escolhido no Dashboard (o mesmo dos totais de pedidos e produtos enviados)
-  const mesTaxa=filtroMes!=='all'?filtroMes:(document.getElementById('filtro-mes')?.value||mesAtual);
-  const errosTaxa=dados.filter(e=>(e.data||'').startsWith(mesTaxa)).length;
+  // mês filtrado: erros e pedidos desse mês; "todos os meses": todos os erros contra todos os pedidos enviados
+  const todosMeses=filtroMes==='all';
+  const mesTaxa=todosMeses?'':filtroMes;
+  const errosTaxa=dados.length;
   const pedMes=pedidosPorMes(mesTaxa);
   const pedidosMes=pedMes.length,produtosMes=pedMes.reduce((s,p)=>s+(p.qtd||0),0);
   const pct=(a,b)=>{const t=a/b*100,c=t>0&&t<0.01?4:2;return t.toLocaleString('pt-BR',{minimumFractionDigits:c,maximumFractionDigits:c})+'%';};
   if(taxaEl)taxaEl.textContent=produtosMes>0?`${pct(errosTaxa,produtosMes)} de erro (${errosTaxa}/${produtosMes.toLocaleString('pt-BR')} prod.)`:'Sem produtos atendidos no mês';
   if(taxaCard){
     const[ty,tm]=mesTaxa.split('-'),sub2=document.getElementById('erros-taxa-mes-sub2');
-    if(taxaLbl)taxaLbl.textContent=`Taxa de erro em ${MESES[parseInt(tm)-1]} ${ty}`;
+    if(taxaLbl)taxaLbl.textContent=todosMeses?'Taxa de erro — todos os meses':`Taxa de erro em ${MESES[parseInt(tm)-1]} ${ty}`;
     taxaCard.textContent=produtosMes>0?pct(errosTaxa,produtosMes):'—';
-    if(taxaSub)taxaSub.textContent=produtosMes>0?`${errosTaxa} erro(s) em ${produtosMes.toLocaleString('pt-BR')} produto(s) enviados`:'Sem pedidos importados neste mês';
+    if(taxaSub)taxaSub.textContent=produtosMes>0?`${errosTaxa} erro(s) em ${produtosMes.toLocaleString('pt-BR')} produto(s) enviados`:(todosMeses?'Sem pedidos importados':'Sem pedidos importados neste mês');
     if(sub2)sub2.textContent=pedidosMes>0?`${pct(errosTaxa,pedidosMes)} dos ${pedidosMes.toLocaleString('pt-BR')} pedido(s) enviados`:'';
   }
 
@@ -3315,7 +3316,7 @@ function semExportar(escopo,tipo){
    Celular/tablet (atalho na tela inicial) guardam a página antiga na memória. Aqui o sistema confere se há
    versão nova: ao abrir, recarrega sozinho; ao voltar para o app, recarrega se estiver na folha da semana
    sem nada em preenchimento; nos demais casos mostra o aviso "Atualizar". */
-const APP_VERSAO='202611061111';
+const APP_VERSAO='202611061413';
 let appVersaoNova=null;
 function atualizarAgora(){
   const base=location.href.split('#')[0].split('?')[0];
