@@ -366,7 +366,7 @@
         <div><div class="page-title">Dashboard</div></div>
         <div class="filter-row">
           <select id="dash-ano" onchange="buildDashMesOptions();renderDash()"><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option></select>
-          <select id="filtro-mes" onchange="renderDash()"></select>
+          <select id="filtro-mes" onchange="renderDash();if(typeof allErros!=='undefined')renderErrosKpis()"></select>
           <button class="btn-export pdf" onclick="exportarPDFColaboradores()" title="Exportar produtividade de todos os colaboradores no mês selecionado"><i class="ti ti-file-type-pdf"></i> Exportar PDF</button>
           <button onclick="carregarDados()" title="Atualizar"><i class="ti ti-refresh"></i></button>
           <button class="theme-btn" onclick="toggleTheme()" id="theme-btn"><i class="ti ti-moon" id="theme-icon"></i> <span id="theme-label">Escuro</span></button>
@@ -680,6 +680,7 @@
       <div class="kpi-grid" id="erros-kpis" style="margin-bottom:18px;">
         <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-alert-triangle" style="color:#E24B4A;"></i></div><div class="kpi-label" id="erros-total-mes-label">Total de erros no mês</div><div class="kpi-value" id="erros-total-mes">—</div></div>
         <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-calendar" style="color:#378ADD;"></i></div><div class="kpi-label" id="erros-total-hist-label">Total histórico</div><div class="kpi-value" id="erros-total-hist">—</div></div>
+        <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-percentage" style="color:#7F77DD;"></i></div><div class="kpi-label" id="erros-taxa-mes-label">Taxa de erro no mês</div><div class="kpi-value" id="erros-taxa-mes">—</div><div class="kpi-sub" id="erros-taxa-mes-sub"></div><div class="kpi-sub" id="erros-taxa-mes-sub2"></div></div>
         <div class="kpi-card"><div class="kpi-icon"><i class="ti ti-trending-up" style="color:#EF9F27;"></i></div><div class="kpi-label">Motivo mais frequente</div><div class="kpi-value" id="erros-motivo-freq" style="font-size:14px;">—</div></div>
       </div>
 
@@ -2051,15 +2052,20 @@ function renderErrosKpis(){
 
   // Taxa de erros do mês x quantidade de produtos atendidos no mês
   const taxaEl=document.getElementById('erros-pizza-taxa');
-  if(taxaEl){
-    const produtosMes=allPedidos.filter(p=>(p.data||'').startsWith(mesRef)).reduce((s,p)=>s+(p.qtd||0),0);
-    if(produtosMes>0){
-      const taxa=(errosMes/produtosMes*100);
-      const casas=taxa>0&&taxa<0.01?4:2;
-      taxaEl.textContent=`${taxa.toLocaleString('pt-BR',{minimumFractionDigits:casas,maximumFractionDigits:casas})}% de erro (${errosMes}/${produtosMes.toLocaleString('pt-BR')} prod.)`;
-    }else{
-      taxaEl.textContent='Sem produtos atendidos no mês';
-    }
+  const taxaCard=document.getElementById('erros-taxa-mes'),taxaSub=document.getElementById('erros-taxa-mes-sub'),taxaLbl=document.getElementById('erros-taxa-mes-label');
+  // sem filtro de mês nesta tela, usa o mês escolhido no Dashboard (o mesmo dos totais de pedidos e produtos enviados)
+  const mesTaxa=filtroMes!=='all'?filtroMes:(document.getElementById('filtro-mes')?.value||mesAtual);
+  const errosTaxa=dados.filter(e=>(e.data||'').startsWith(mesTaxa)).length;
+  const pedMes=pedidosPorMes(mesTaxa);
+  const pedidosMes=pedMes.length,produtosMes=pedMes.reduce((s,p)=>s+(p.qtd||0),0);
+  const pct=(a,b)=>{const t=a/b*100,c=t>0&&t<0.01?4:2;return t.toLocaleString('pt-BR',{minimumFractionDigits:c,maximumFractionDigits:c})+'%';};
+  if(taxaEl)taxaEl.textContent=produtosMes>0?`${pct(errosTaxa,produtosMes)} de erro (${errosTaxa}/${produtosMes.toLocaleString('pt-BR')} prod.)`:'Sem produtos atendidos no mês';
+  if(taxaCard){
+    const[ty,tm]=mesTaxa.split('-'),sub2=document.getElementById('erros-taxa-mes-sub2');
+    if(taxaLbl)taxaLbl.textContent=`Taxa de erro em ${MESES[parseInt(tm)-1]} ${ty}`;
+    taxaCard.textContent=produtosMes>0?pct(errosTaxa,produtosMes):'—';
+    if(taxaSub)taxaSub.textContent=produtosMes>0?`${errosTaxa} erro(s) em ${produtosMes.toLocaleString('pt-BR')} produto(s) enviados`:'Sem pedidos importados neste mês';
+    if(sub2)sub2.textContent=pedidosMes>0?`${pct(errosTaxa,pedidosMes)} dos ${pedidosMes.toLocaleString('pt-BR')} pedido(s) enviados`:'';
   }
 
   // Motivo mais frequente
@@ -3309,7 +3315,7 @@ function semExportar(escopo,tipo){
    Celular/tablet (atalho na tela inicial) guardam a página antiga na memória. Aqui o sistema confere se há
    versão nova: ao abrir, recarrega sozinho; ao voltar para o app, recarrega se estiver na folha da semana
    sem nada em preenchimento; nos demais casos mostra o aviso "Atualizar". */
-const APP_VERSAO='202611031016';
+const APP_VERSAO='202611061111';
 let appVersaoNova=null;
 function atualizarAgora(){
   const base=location.href.split('#')[0].split('?')[0];
