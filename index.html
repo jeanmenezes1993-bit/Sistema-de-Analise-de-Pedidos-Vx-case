@@ -238,10 +238,10 @@
     .sem-tab-total{border:1px dashed var(--green);background:var(--bg-secondary);color:var(--text-primary);border-radius:var(--radius-md);padding:7px 14px;font-size:13px;font-weight:700;line-height:1.3;cursor:default;}
     .sem-tab-total small{display:block;font-size:10.5px;font-weight:400;color:var(--text-secondary);}
     .sem-tab-total b{color:var(--green);font-size:12px;}
-    .sem-colabs{display:flex;gap:6px;flex-wrap:wrap;align-items:stretch;margin:-4px 0 12px;}
+    .sem-colabs{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:6px;margin:-4px 0 12px;}
     .sem-colabs:empty{display:none;}
-    .sem-colabs-lbl{align-self:center;font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em;margin-right:2px;}
-    .sem-colab-card{border:1px solid var(--border-md);background:var(--bg-primary);color:var(--text-primary);border-radius:var(--radius-md);padding:6px 12px;font-size:13px;font-weight:600;line-height:1.3;cursor:default;}
+    .sem-colabs-lbl{grid-column:1/-1;font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em;}
+    .sem-colab-card{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid var(--border-md);background:var(--bg-primary);color:var(--text-primary);border-radius:var(--radius-md);padding:6px 12px;font-size:13px;font-weight:600;line-height:1.3;cursor:default;}
     .sem-colab-card small{display:block;font-size:10.5px;font-weight:400;color:var(--text-secondary);}
     .sem-colab-card b{color:var(--green);font-size:12px;}
     .sem-export{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 12px;border-top:1px solid var(--border);}
@@ -3316,7 +3316,7 @@ function semExportar(escopo,tipo){
    Celular/tablet (atalho na tela inicial) guardam a página antiga na memória. Aqui o sistema confere se há
    versão nova: ao abrir, recarrega sozinho; ao voltar para o app, recarrega se estiver na folha da semana
    sem nada em preenchimento; nos demais casos mostra o aviso "Atualizar". */
-const APP_VERSAO='202611061413';
+const APP_VERSAO='202611131047';
 let appVersaoNova=null;
 function atualizarAgora(){
   const base=location.href.split('#')[0].split('?')[0];
