@@ -1388,7 +1388,7 @@ function eficInfo(k){
   const x=EFIC_TEXTOS[k];if(!x)return;
   box.dataset.k=k;
   box.style.borderLeftColor=x.c;
-  box.innerHTML=`<b style="color:${x.c};">${x.t}</b>${x.d}<div style="margin-top:4px;font-size:11px;color:var(--text-secondary);">A média considerada é a dos colaboradores do mês selecionado.</div>`;
+  box.innerHTML=`<b style="color:${x.c};">${x.t}</b>${x.d}`;
   box.style.display='block';
 }
 
@@ -3340,7 +3340,7 @@ function semExportar(escopo,tipo){
    Celular/tablet (atalho na tela inicial) guardam a página antiga na memória. Aqui o sistema confere se há
    versão nova: ao abrir, recarrega sozinho; ao voltar para o app, recarrega se estiver na folha da semana
    sem nada em preenchimento; nos demais casos mostra o aviso "Atualizar". */
-const APP_VERSAO='202611131108';
+const APP_VERSAO='202611131117';
 let appVersaoNova=null;
 function atualizarAgora(){
   const base=location.href.split('#')[0].split('?')[0];
