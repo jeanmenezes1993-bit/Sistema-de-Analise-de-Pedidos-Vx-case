@@ -152,6 +152,10 @@
     .efic-table td{padding:7px 10px;border-bottom:1px solid var(--border);}
     .efic-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500;}
     .efic-ideal{background:#E1F5EE;color:#0F6E56;} .efic-volume{background:#E6F1FB;color:#0C447C;} .efic-rapido{background:#FAEEDA;color:#633806;} .efic-atencao{background:#FCEBEB;color:#A32D2D;}
+    .efic-leg{display:inline-flex;align-items:center;gap:5px;font-family:inherit;font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid transparent;font-weight:500;cursor:pointer;}
+    .efic-leg:hover{filter:brightness(.96);} .efic-leg.ativo{border-color:currentColor;box-shadow:0 0 0 1px currentColor;}
+    .efic-info{margin:-6px 0 14px;padding:10px 14px;border-radius:var(--radius-md);background:var(--bg-secondary);border-left:4px solid var(--border-md);font-size:12.5px;line-height:1.55;color:var(--text-primary);}
+    .efic-info b{display:block;margin-bottom:2px;}
 
     /* TEMA ESCURO */
     body.dark{--bg-page:#0F1117;--bg-primary:#1A1D27;--bg-secondary:#22263A;--text-primary:#F1F2F6;--text-secondary:#9FA8B8;--text-tertiary:#5A6380;--border:rgba(255,255,255,0.07);--border-md:rgba(255,255,255,0.12);--sidebar-bg:#0D1018;--sidebar-hover:rgba(255,255,255,0.05);--sidebar-active:rgba(29,158,117,0.25);}
@@ -406,11 +410,12 @@
       <div class="card" style="margin-bottom:16px;">
         <div class="card-label" style="margin-bottom:4px;">Mapa de eficiência <span style="font-size:10px;font-weight:400;color:var(--text-tertiary);">tempo médio × volume</span></div>
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-          <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 10px;border-radius:20px;background:#E1F5EE;color:#0F6E56;font-weight:500;">🏆 Ideal</span>
-          <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 10px;border-radius:20px;background:#E6F1FB;color:#0C447C;font-weight:500;">📦 Alto volume</span>
-          <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 10px;border-radius:20px;background:#FAEEDA;color:#633806;font-weight:500;">⚡ Rápido</span>
-          <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 10px;border-radius:20px;background:#FCEBEB;color:#A32D2D;font-weight:500;">⚠️ Atenção</span>
+          <button type="button" class="efic-leg" data-k="ideal" onclick="eficInfo('ideal')" style="background:#E1F5EE;color:#0F6E56;">🏆 Ideal</button>
+          <button type="button" class="efic-leg" data-k="volume" onclick="eficInfo('volume')" style="background:#E6F1FB;color:#0C447C;">📦 Alto volume</button>
+          <button type="button" class="efic-leg" data-k="rapido" onclick="eficInfo('rapido')" style="background:#FAEEDA;color:#633806;">⚡ Rápido</button>
+          <button type="button" class="efic-leg" data-k="atencao" onclick="eficInfo('atencao')" style="background:#FCEBEB;color:#A32D2D;">⚠️ Atenção</button>
         </div>
+        <div id="efic-info" class="efic-info" style="display:none;"></div>
         <div id="eficiencia-empty" class="empty-state" style="display:none;">Nenhum dado neste mês.</div>
         <div style="position:relative;height:320px;"><canvas id="eficienciaChart"></canvas></div>
         <div style="margin-top:14px;" id="eficiencia-tabela"></div>
@@ -1366,6 +1371,25 @@ function renderDash(){
   renderEficiencia(colabs);
   renderHeatmap();
   renderErrosDashboard(mes);
+}
+
+// texto de cada categoria do mapa de eficiência: só aparece ao clicar no nome (clicar de novo fecha)
+const EFIC_TEXTOS={
+  ideal:{t:'🏆 Ideal',c:'#0F6E56',d:'Entrega mais volume que a média da equipe no mês e gasta menos tempo por pedido que a média. É o ponto de referência: rápido e produtivo ao mesmo tempo.'},
+  volume:{t:'📦 Alto volume',c:'#0C447C',d:'Entrega muito volume, acima da média da equipe, mas leva mais tempo por pedido que a média. É produtivo, e o espaço para melhorar está em ganhar agilidade.'},
+  rapido:{t:'⚡ Rápido',c:'#633806',d:'Termina os pedidos em menos tempo que a média da equipe, mas com volume abaixo da média. É ágil e pode receber mais pedidos.'},
+  atencao:{t:'⚠️ Atenção',c:'#A32D2D',d:'Volume abaixo da média e tempo por pedido acima da média. Vale acompanhar de perto e entender o motivo, como dificuldade, necessidade de treinamento ou pedidos mais complexos.'}
+};
+function eficInfo(k){
+  const box=document.getElementById('efic-info');if(!box)return;
+  const abrir=box.dataset.k!==k||box.style.display==='none';
+  document.querySelectorAll('.efic-leg').forEach(b=>b.classList.toggle('ativo',abrir&&b.dataset.k===k));
+  if(!abrir){box.style.display='none';box.dataset.k='';return;}
+  const x=EFIC_TEXTOS[k];if(!x)return;
+  box.dataset.k=k;
+  box.style.borderLeftColor=x.c;
+  box.innerHTML=`<b style="color:${x.c};">${x.t}</b>${x.d}<div style="margin-top:4px;font-size:11px;color:var(--text-secondary);">A média considerada é a dos colaboradores do mês selecionado.</div>`;
+  box.style.display='block';
 }
 
 function renderEficiencia(colabs){
@@ -3316,7 +3340,7 @@ function semExportar(escopo,tipo){
    Celular/tablet (atalho na tela inicial) guardam a página antiga na memória. Aqui o sistema confere se há
    versão nova: ao abrir, recarrega sozinho; ao voltar para o app, recarrega se estiver na folha da semana
    sem nada em preenchimento; nos demais casos mostra o aviso "Atualizar". */
-const APP_VERSAO='202611131047';
+const APP_VERSAO='202611131108';
 let appVersaoNova=null;
 function atualizarAgora(){
   const base=location.href.split('#')[0].split('?')[0];
